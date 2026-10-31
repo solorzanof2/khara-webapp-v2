@@ -1,0 +1,25 @@
+.project-context {
+  align-items: center;
+  border-bottom: 1px solid #e3e6f0;
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 1rem;
+}
+
+.project-context h5 {
+  color: #3a3b45;
+}
+
+.project-actions {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+}
+
+@media (max-width: 576px) {
+  .project-context {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: .75rem;
+  }
+}

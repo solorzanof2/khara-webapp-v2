@@ -1,0 +1,36 @@
+<section id="app-home">
+  <div class="container">
+    <!-- <div class="row">
+      <div class="col-12">
+        <div class="home-title">Init</div>
+      </div>
+    </div> -->
+    <div class="row">
+      <div class="col-xs-12 col-sm-12 col-md-8 col-lg-8 col-xl-8">
+        <div class="main-content">
+          <div class="content-timeline">
+            <app-post-editor
+              headerText=""
+            ></app-post-editor>
+            <div class="custom-separator"></div>
+            <app-timeline
+              [collection]="posts"
+              (nextEvent)="timelineNextEventHandler()"
+              (selectEvent)="selectedPostEventHandler($event)"
+              (editEvent)="editPostEventHandler($event)"
+            ></app-timeline>
+          </div>
+        </div>
+      </div>
+      <div class="col-xs-12 col-sm-12 col-md-4 col-lg-4 col-xl-4">
+        <div class="complementary-content mt-3">
+          <form id="search-form">
+            <div class="form-group">
+              <input type="text" name="searchInput" id="searchInput" class="form-control" placeholder="Search in Khara">
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

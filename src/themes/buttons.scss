@@ -1,0 +1,124 @@
+
+/** @solid buttons */
+
+.btn[color="primary"] {
+  @include button(primary, solid);
+}
+
+.btn[color="secondary"] {
+  @include button(secondary, solid);
+}
+
+.btn[color="tertiary"] {
+  @include button(tertiary, solid);
+}
+
+.btn[color="success"] {
+  @include button(primary, solid);
+}
+
+.btn[color="warning"] {
+  @include button(warning, solid);
+}
+
+.btn[color="danger"] {
+  @include button(danger, solid);
+}
+
+.btn[color="dark"] {
+  @include button(dark, solid);
+}
+
+.btn[color="medium"] {
+  @include button(medium, solid);
+}
+
+.btn[color="light"] {
+  @include button(light, solid);
+}
+
+/** @outline buttons */
+
+.btn[color="outline-primary"] {
+  @include button(primary, outline);
+}
+
+.btn[color="outline-secondary"] {
+  @include button(secondary, outline);
+}
+
+.btn[color="outline-tertiary"] {
+  @include button(tertiary, outline);
+}
+
+.btn[color="outline-success"] {
+  @include button(primary, outline);
+}
+
+.btn[color="outline-warning"] {
+  @include button(warning, outline);
+}
+
+.btn[color="outline-danger"] {
+  @include button(danger, outline);
+}
+
+.btn[color="outline-dark"] {
+  @include button(dark, outline);
+}
+
+.btn[color="outline-medium"] {
+  @include button(medium, outline);
+}
+
+.btn[color="outline-light"] {
+  @include button(light, outline);
+}
+
+/** @clear buttons */
+
+.btn[color="clear-primary"] {
+  @include button(primary, clear);
+}
+
+.btn[color="clear-secondary"] {
+  @include button(secondary, clear);
+}
+
+.btn[color="clear-tertiary"] {
+  @include button(tertiary, clear);
+}
+
+.btn[color="clear-success"] {
+  @include button(primary, clear);
+}
+
+.btn[color="clear-warning"] {
+  @include button(warning, clear);
+}
+
+.btn[color="clear-danger"] {
+  @include button(danger, clear);
+}
+
+.btn[color="clear-dark"] {
+  @include button(dark, clear);
+}
+
+.btn[color="clear-medium"] {
+  @include button(medium, clear);
+}
+
+.btn[color="clear-light"] {
+  @include button(light, clear);
+}
+
+/** @social buttons */
+
+.btn[color="facebook"] {
+  @include button(facebook, solid);
+}
+
+.btn[color="gmail"] {
+  @include button(gmail, solid);
+}

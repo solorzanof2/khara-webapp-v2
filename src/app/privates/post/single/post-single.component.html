@@ -1,0 +1,73 @@
+<section id="app-post-single">
+  <div class="container">
+    <div class="row">
+      <div class="col-xs-12 col-sm-12 col-md-8 col-lg-8 col-xl-8">
+        <div class="card post-card">
+          <div class="card-header d-flex justify-content-between align-items-start gap-2">
+            <small><strong>{{post.displayName}}</strong> &hyphen; <a href="javascript:void(0)">&#64;{{post.mention}}</a></small>
+            <a
+              href="javascript:void(0)"
+              title="Editar publicación"
+              (click)="editClickEventHandler(post)"
+            >Editar</a>
+          </div>
+          <div
+            class="card-body"
+            [innerHTML]="post.htmlContent | SanitizeHTML"
+          ></div>
+          <div class="card-footer">
+            <table class="w-100">
+              <tr>
+                <td class="col-2"><small>{{post.totalInsights}} Insights</small></td>
+                <td class="col-3"><small>{{post.totalComments}} Comentarios</small></td>
+                <td class="col-3"><small>{{post.createdLabel}}</small></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+        <div class="main-content">
+          <div class="content-timeline">
+            <app-post-editor
+              headerText=""
+            ></app-post-editor>
+            <div class="custom-separator"></div>
+            <app-timeline
+              [collection]="posts"
+              (nextEvent)="timelineNextEventHandler()"
+              (selectEvent)="selectedPostEventHandler($event)"
+              (editEvent)="editPostEventHandler($event)"
+            ></app-timeline>
+          </div>
+        </div>
+      </div>
+      <div class="col-xs-12 col-sm-12 col-md-4 col-lg-4 col-xl-4">
+        <div class="complementary-content" *ngIf="post.project as project">
+          <div class="card card-white no-radius">
+            <div class="card-header">Proyecto</div>
+            <div class="card-body">
+              <h5 class="mb-1">{{project.name}}</h5>
+              <small class="text-muted">{{project.key}}</small>
+              <dl class="row small mt-3 mb-0">
+                <dt class="col-5">Visibilidad</dt>
+                <dd class="col-7">{{project.visibilityLabel}}</dd>
+                <dt class="col-5">Estado</dt>
+                <dd class="col-7">{{project.statusLabel}}</dd>
+                <dt class="col-5">Creado</dt>
+                <dd class="col-7">{{project.createdLabel}}</dd>
+                <dt class="col-5">Actualizado</dt>
+                <dd class="col-7 mb-0">{{project.updatedLabel}}</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+        <div class="complementary-content mt-3">
+          <form id="search-form">
+            <div class="form-group">
+              <input type="text" name="searchInput" id="searchInput" class="form-control" placeholder="Search in Khara">
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

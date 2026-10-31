@@ -1,0 +1,54 @@
+<section id="app-login">
+  <div class="container">
+    <div class="row">
+      <div class="col-xd-12 col-sm-12 col-md-6 col-lg-6 col-xl-6 offset-md-3 vh-100 d-grid-v-center">
+        <div class="card">
+          <div class="card-body">
+            <div class="form-wrapper">
+              <form
+                [formGroup]="form"
+                autocomplete="off"
+                (ngSubmit)="submitEventHandler(form.value)"
+              >
+                <div class="form-group">
+                  <label for="usernameInput">Usuario/Email</label>
+                  <input
+                    type="text"
+                    id="usernameInput"
+                    class="form-control"
+                    formControlName="username"
+                  >
+                </div>
+                <div class="form-group">
+                  <label for="passwordInput">Contraseña</label>
+                  <input
+                    type="password"
+                    id="passwordInput"
+                    class="form-control"
+                    formControlName="password"
+                  >
+                </div>
+                <div class="separator mt-4 mb-4"></div>
+                <div class="form-group d-grid gap-2">
+                  <button
+                    class="btn btn-success"
+                    [disabled]="form.invalid"
+                  >
+                    Acceder
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item" align="center">
+              <a
+                [routerLink]="SignupLink"
+              >CREAR UNA CUENTA</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

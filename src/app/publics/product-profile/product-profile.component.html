@@ -1,0 +1,40 @@
+<section id="app-public-product-profile">
+  <div class="container mt-5">
+    <div class="row">
+      <div class="col-12">
+        <h1 class="mb-3">Special Item</h1>
+      </div>
+      <div class="col-xs-12 col-sm-12 col-lg-6 col-xl-6">
+        <!-- <p-galleria
+          [value]="products"
+          [responsiveOptions]="responsiveOptions"
+          [containerStyle]="{ 'max-width': '640px' }"
+          [numVisible]="5"
+        >
+          <ng-template #item let-item>
+            <p-image
+              [src]="item.itemImageSrc"
+              alt="Image"
+              [preview]="true"
+            />
+          </ng-template>
+          <ng-template #thumbnail let-item>
+            <img [src]="item.thumbnailImageSrc" />
+          </ng-template>
+        </p-galleria> -->
+        <lightgallery [settings]="settings" [onBeforeSlide]="beforeSlideEventHandler">
+        @for (product of products; track product) {
+          <a [attr.href]="product.itemImageSrc">
+            <img [alt]="product.alt" [src]="product.thumbnailImageSrc" />
+          </a>
+        }
+        </lightgallery>
+      </div>
+      <div class="col-xs-12 col-sm-12 col-lg-3 col-xl-3">
+        <p-card header="Special Item">
+
+        </p-card>
+      </div>
+    </div>
+  </div>
+</section>

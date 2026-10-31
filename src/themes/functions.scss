@@ -1,0 +1,58 @@
+
+@mixin button($type, $style) {
+  --background: var(--color-#{$type});
+  --font: var(--color-#{$type}-contrast);
+  --border: var(--color-#{$type});
+
+  $isSolid: ($style == "solid");
+
+  @if ($style == "clear") {
+    --border: transparent;
+  }
+
+  @if (false == $isSolid) {
+    --background: transparent;
+    --font: var(--color-#{$type});
+  }
+
+  &:hover {
+    --background: var(--color-#{$type}-tint);
+    --font: var(--color-#{$type}-contrast);
+  }
+
+  &:disabled, &.disabled {
+    --font: var(--color-dark);
+    --background: var(--color-medium);
+    --border: var(--color-medium);
+  }
+
+  &:not(:disabled):not(.disabled):active,
+  &:not(:disabled):not(.disabled).active,
+  &.show > .btn-primary.dropdown-toggle {
+    --background: var(--color-#{$type}-shade);
+    --font: var(--color-#{$type}-contrast);
+  }
+
+  &:not(:disabled):not(.disabled):active:focus,
+  &:not(:disabled):not(.disabled).active:focus,
+  .show > .btn-primary.dropdown-toggle:focus,
+  &:focus, &.focus {
+    box-shadow: 0 0 0 0.2rem rgba(var(--color-#{$type}-rgb), .5) !important;
+  }
+
+  color: var(--font) !important;
+  background-color: var(--background) !important;
+  border-color: var(--border) !important;
+  transition: all .5s;
+}
+
+
+@mixin background($type) {
+  --background: var(--color-#{$type});
+  --font: var(--color-#{$type}-contrast);
+  --border: var(--color-#{$type});
+
+  color: var(--font) !important;
+  border-color: var(--border) !important;
+  background-color: var(--background) !important;
+}

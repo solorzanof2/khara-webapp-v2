@@ -1,0 +1,82 @@
+<section id="app-signup">
+  <div class="container">
+    <div class="row">
+      <div class="col-xd-12 col-sm-12 col-md-6 col-lg-6 col-xl-6 offset-md-3 vh-100 d-grid-v-center">
+        <div class="card">
+          <div class="card-body">
+            <div class="form-wrapper">
+              <form
+                [formGroup]="form"
+                autocomplete="off"
+                (ngSubmit)="submitEventHandler(form.value)"
+              >
+                <div class="form-group">
+                  <label for="usernameInput">Usuario</label>
+                  <input
+                    type="text"
+                    id="usernameInput"
+                    class="form-control"
+                    formControlName="username"
+                  >
+                  <app-hinttext
+                    *ngIf="toggleUsernameHinttext"
+                    [source]="usernameHinttext"
+                  ></app-hinttext>
+                </div>
+                <div class="form-group">
+                  <label for="emailInput">Email</label>
+                  <input
+                    type="email"
+                    id="emailInput"
+                    class="form-control"
+                    formControlName="email"
+                  >
+                  <app-hinttext
+                    *ngIf="toggleEmailHinttext"
+                    [source]="emailHinttext"
+                  ></app-hinttext>
+                </div>
+                <div class="form-group">
+                  <label for="passwordInput">Contraseña</label>
+                  <input
+                    type="password"
+                    id="passwordInput"
+                    class="form-control"
+                    formControlName="password"
+                  >
+                </div>
+                <div class="form-group">
+                  <label for="nameInput">Nombre</label>
+                  <input
+                    type="text"
+                    id="nameInput"
+                    class="form-control"
+                    formControlName="name"
+                  >
+                </div>
+                <div class="form-group">
+                  <label for="lastnameInput">Apellido</label>
+                  <input
+                    type="text"
+                    id="lastnameInput"
+                    class="form-control"
+                    formControlName="lastname"
+                  >
+                </div>
+                <div class="separator mt-4 mb-4"></div>
+                <div class="form-group">
+                  <button
+                    class="btn btn-success"
+                    [disabled]="form.invalid"
+                  >
+                    Acceder
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

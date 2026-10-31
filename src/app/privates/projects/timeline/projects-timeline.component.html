@@ -1,0 +1,33 @@
+<section id="app-projects-timeline">
+  <div class="container">
+    <div class="row mt-5">
+      <div class="col-xs-12 col-sm-12 col-md-8 col-lg-8 col-xl-8 offset-lg-2 offset-md-2">
+        <div class="project-context" *ngIf="hasProject">
+          <div>
+            <p class="mb-1"><small>Proyecto</small></p>
+            <h5 class="mb-0">{{project.name}}</h5>
+            <small>{{project.key}} &middot; {{project.visibilityLabel}}</small>
+          </div>
+          <div class="project-actions">
+            <button
+              type="button"
+              routerLink="/webapp/posts/add"
+              [queryParams]="{pref: projectReference}"
+              class="btn btn-primary btn-sm"
+            >Crear Publicación</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row mt-5">
+      <div class="col-xs-12 col-sm-12 col-md-8 col-lg-8 col-xl-8 offset-lg-2 offset-md-2">
+        <app-timeline
+          [collection]="posts"
+          (nextEvent)="timelineNextEventHandler()"
+          (selectEvent)="selectedPostEventHandler($event)"
+          (editEvent)="editPostEventHandler($event)"
+        ></app-timeline>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,193 @@
+<section id="app-projects-form">
+  <div class="container">
+    <div class="row mt-5">
+      <div class="col-xs-12 col-sm-12 col-md-8 col-lg-8 col-xl-8 offset-2">
+        <app-simple-card
+          [headerText]="formTitle"
+        >
+          <form
+            [formGroup]="form"
+            autocapitalize="off"
+            (ngSubmit)="formSubmitEventHandler(form.value)"
+            autocomplete="off"
+          >
+            <div class="sc-row">
+              <label for="nameInput" class="row-label">
+                <div class="label-text">
+                  <span>Nombre</span>
+                </div>
+                <div class="label-hinttext">Nombre de identificación del proyecto. (e.g. My Great Project)</div>
+              </label>
+              <div class="row-column">
+                <div class="column-container">
+                  <div class="control-wrapper">
+                    <input
+                      id="nameInput"
+                      class="form-control"
+                      type="text"
+                      formControlName="name"
+                      [class.is-valid]="
+                        nameControl.valid &&
+                        (nameControl.dirty || nameControl.touched)
+                      "
+                      [class.is-invalid]="
+                        nameControl.invalid &&
+                        (nameControl.dirty || nameControl.touched)
+                      "
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="sc-row">
+              <label for="keyInput" class="row-label">
+                <div class="label-text">
+                  <span>Key</span>
+                </div>
+                <div class="label-hinttext">Nombre Clave del Proyecto (e.g. MGP15).</div>
+              </label>
+              <div class="row-column">
+                <div class="column-container">
+                  <div class="control-wrapper">
+                    <input
+                      id="keyInput"
+                      class="form-control"
+                      type="text"
+                      formControlName="key"
+                      [class.is-valid]="
+                        keyControl.valid &&
+                        (keyControl.dirty || keyControl.touched)
+                      "
+                      [class.is-invalid]="
+                        keyControl.invalid &&
+                        (keyControl.dirty || keyControl.touched)
+                      "
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="sc-row">
+              <label for="visibility" class="row-label">
+                <div class="label-text">
+                  <span>Visibilidad</span>
+                </div>
+                <div class="label-hinttext">Visibilidad y acceso del proyecto.</div>
+              </label>
+              <div class="row-column">
+                <div class="column-container">
+                  <div class="control-wrapper">
+                    <select class="form-control" formControlName="visibility">
+                      <ng-container
+                        *ngFor="let row of visibilities"
+                      >
+                        <option [value]="row.value">{{row.label}}</option>
+                      </ng-container>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <ng-container
+              *ngIf="isEdition"
+            >
+              <div class="sc-row compact-row bg-primary-subtle">
+                <label for="createdDummieInput" class="row-label">
+                  <div class="label-hinttext">Creado {{createdLabel}}</div>
+                </label>
+                <div class="row-column">
+                  <div class="column-container">
+                    <div class="control-wrapper">
+                      Actualizado {{updatedLabel}}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- <div class="sc-row compact-row bg-success-subtle">
+                <label for="updatedDummieInput" class="row-label">
+                  <div class="label-hinttext">Actualizado</div>
+                </label>
+                <div class="row-column">
+                  <div class="column-container">
+                    <div class="control-wrapper">
+                      {{updatedLabel}}
+                    </div>
+                  </div>
+                </div>
+              </div> -->
+            </ng-container>
+            <div class="sc-row">
+              <label for="dummieInput" class="row-label"></label>
+              <div class="row-column">
+                <div class="column-container">
+                  <div class="control-wrapper">
+                    <button
+                      class="btn btn-primary"
+                      [disabled]="form.invalid"
+                    >{{formSubmitButtonText}}</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </app-simple-card>
+      </div>
+    </div><!-- /.row -->
+    <div class="row mt-5" *ngIf="isEdition">
+      <div class="col-xs-12 col-sm-12 col-md-8 col-lg-8 col-xl-8 offset-2">
+        <app-simple-card
+          headerText="Administrar Proyecto"
+        >
+          <div class="sc-row">
+            <label for="stateSelect" class="row-label">
+              <div class="label-text">
+                <span>Estado</span>
+              </div>
+              <div class="label-hinttext">Al estar inactivo, el proyecto no podrá ser visto ni seleccionado.</div>
+            </label>
+            <div class="row-column">
+              <div class="column-container">
+                <div class="control-wrapper">
+                  <select
+                    class="form-control"
+                    [ngModelOptions]="{standalone: true}"
+                    [(ngModel)]="projectStatusModel"
+                  >
+                    <ng-container
+                      *ngFor="let row of status"
+                    >
+                      <option [value]="row.value">{{row.label}}</option>
+                    </ng-container>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sc-row">
+            <label class="row-label">
+              <div class="label-text">
+                <span>Eliminar</span>
+              </div>
+              <div class="label-hinttext">
+                <span>Eliminar el proyecto y todos los datos relacionados</span>
+                <br>
+                <span font-danger>Ten cuidado, estos cambios no podrán ser revertidos</span>
+              </div>
+            </label>
+            <div class="row-column">
+              <div class="column-container">
+                <div class="control-wrapper">
+                  <button
+                    type="button"
+                    class="btn btn-danger"
+                    (click)="deleteClickEventHandler()"
+                  >Eliminar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </app-simple-card>
+      </div>
+    </div><!-- /.row -->
+  </div>
+</section>

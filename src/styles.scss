@@ -1,0 +1,15 @@
+/* You can add global styles to this file, and also import other style files */
+
+
+// @use "./themes/layout.scss";
+// @use '~lightgallery/scss/lightgallery';
+@use "../node_modules/lightgallery/scss/lightgallery.scss";
+@use "./themes/variables.scss";
+@use "./themes/globals.scss";
+
+
+:root {
+  --p-card-background: "#18181b" !important;
+  --p-card-color: #212121 !important;
+}
+

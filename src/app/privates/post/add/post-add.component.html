@@ -1,0 +1,13 @@
+<section id="app-post-add">
+  <div class="container">
+    <div class="row">
+      <div class="col-xs-12 col-sm-12 col-md-8 col-lg-8 col-xl-6 offset-lg-2 offset-md-2">
+        <app-post-editor
+          headerText="Haz una publicación"
+          [source]="content"
+          (saveEvent)="saveEventHandler($event)"
+        ></app-post-editor>
+      </div>
+    </div>
+  </div>
+</section>
