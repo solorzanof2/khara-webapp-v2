@@ -4,6 +4,7 @@ import { NotificationService } from '../../../commons/services/notification.serv
 import { BasePostDTO, FullPostDTO } from '../../../commons/models/interfaces/responses/post.response';
 import { PostService } from '../../../commons/services/post.service';
 import { TimelineComponent } from '../../../commons/components/timeline';
+import { PostEditModalComponent } from '../../../commons/components/post-edit-modal';
 import { PostEditorComponent } from '../../../commons/components/post-editor';
 
 
@@ -16,6 +17,7 @@ import { PostEditorComponent } from '../../../commons/components/post-editor';
 export class PostSingleComponent implements OnInit {
   @ViewChild(TimelineComponent) timeline!: TimelineComponent;
   @ViewChild(PostEditorComponent) editor!: PostEditorComponent;
+  @ViewChild(PostEditModalComponent) postEditModal!: PostEditModalComponent;
   publicationType: 'comment' | 'insight' = 'comment';
   saving = false;
   loading = true;
@@ -123,11 +125,8 @@ export class PostSingleComponent implements OnInit {
   }
 
   editClickEventHandler(post: FullPostDTO): void {
-    this.router.navigate(['webapp', 'posts', 'add'], {
-      queryParams: {
-        ref: this.reference,
-      },
-    });
+    if (this.loading || this.saving || !post.uid) return;
+    this.postEditModal.open(post);
   }
 
   timelineNextEventHandler(): void {
@@ -143,12 +142,17 @@ export class PostSingleComponent implements OnInit {
     ]);
   }
 
-  editPostEventHandler(post: FullPostDTO): void {
-    this.router.navigate(['webapp', 'posts', 'add'], {
-      queryParams: {
-        ref: post.uid,
-      },
-    });
+  editPostEventHandler(reply: BasePostDTO): void {
+    if (this.loading || this.saving || !this.post.uid) return;
+    // Membership in the parent collections determines the endpoint, not optional DTO metadata.
+    const type = this.post.insights.some(insight => insight.uid === reply.uid) ? 'insight'
+      : this.post.comments.some(comment => comment.uid === reply.uid) ? 'comment' : undefined;
+    if (!type) return;
+    this.postEditModal.open(reply, { type, parentUid: this.post.uid });
+  }
+
+  async updatedPostEventHandler(): Promise<void> {
+    await this.fetchData();
   }
 
   // #endregion EVENTS

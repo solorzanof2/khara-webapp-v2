@@ -134,6 +134,31 @@ export class PostService extends BaseService {
     }
   }
 
+  async updateInsight(value: string, insightUid: string, parentUid: string): Promise<void> {
+    return this.updateReply('insights', value, insightUid, parentUid);
+  }
+
+  async updateComment(value: string, commentUid: string, parentUid: string): Promise<void> {
+    return this.updateReply('comments', value, commentUid, parentUid);
+  }
+
+  private async updateReply(type: 'insights' | 'comments', content: string, replyUid: string, parentUid: string): Promise<void> {
+    try {
+      const { status } = await this.restService.post<ApiResponse<unknown>>(`v1/posts/${type}/update`, {
+        content, replyUid, parentUid, workspaceUid: this.identityService.getWorkspace().uid,
+      });
+      Exception.isDefaultErrorStatus(status);
+      Exception.isBadRequest(status, 'Uno o más datos enviados son inválidos.');
+      Exception.isNotFoundStatus(status, 'La respuesta o su publicación principal no existe o no es accesible.');
+      if (status === 403) throw new Error('No tienes permiso para editar esta respuesta.');
+      if (status < 200 || status >= 300) throw new Error('No se pudo actualizar la respuesta.');
+      return this.noContent();
+    }
+    catch (error: any) {
+      return this.error(error);
+    }
+  }
+
   async saveComment(value: string, postUid: string/* , projectUid: string */): Promise<BasePostDTO> {
     try {
       const workspace = this.identityService.getWorkspace();

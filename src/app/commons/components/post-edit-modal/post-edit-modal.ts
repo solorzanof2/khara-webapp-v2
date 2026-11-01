@@ -1,9 +1,13 @@
 import { ChangeDetectorRef, Component, ElementRef, EventEmitter, Inject, NgModule, OnDestroy, Output, ViewChild } from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
-import { FullPostDTO } from '../../models/interfaces/responses/post.response';
+import { BasePostDTO, FullPostDTO } from '../../models/interfaces/responses/post.response';
 import { PostService } from '../../services/post.service';
 import { NotificationService } from '../../services/notification.service';
 import { PostEditorModule } from '../post-editor';
+
+export type PostEditContext =
+  | { type: 'post'; projectUid: string }
+  | { type: 'insight' | 'comment'; parentUid: string };
 
 interface BootstrapModal {
   show(): void;
@@ -24,7 +28,7 @@ type BootstrapWindow = Window & {
       <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content" [attr.aria-busy]="isSaving">
           <div class="modal-header">
-            <h2 class="modal-title fs-5" [id]="titleId">Editar publicación</h2>
+            <h2 class="modal-title fs-5" [id]="titleId">{{title}}</h2>
             <button type="button" class="btn-close" aria-label="Cerrar"
               [disabled]="isSaving" (click)="close()"></button>
           </div>
@@ -49,7 +53,13 @@ export class PostEditModalComponent implements OnDestroy {
   @ViewChild('modalElement', { static: true }) modalElement!: ElementRef<HTMLDivElement>;
   @Output() updatedEvent = new EventEmitter<string>();
 
-  post?: FullPostDTO;
+  post?: BasePostDTO;
+  private context?: PostEditContext;
+
+  get title(): string {
+    return this.context?.type === 'insight' ? 'Editar insight'
+      : this.context?.type === 'comment' ? 'Editar comentario' : 'Editar publicación';
+  }
   isSaving = false;
   errorMessage = '';
   private modal?: BootstrapModal;
@@ -69,13 +79,23 @@ export class PostEditModalComponent implements OnDestroy {
 
   private readonly hiddenHandler = (): void => {
     this.post = undefined;
+    this.context = undefined;
     this.errorMessage = '';
     if (!this.destroyed) this.changeDetector.detectChanges();
     this.previousFocus?.focus();
   };
 
-  open(post: FullPostDTO): void {
+  open(post: FullPostDTO): void;
+  open(post: BasePostDTO, context: PostEditContext): void;
+  open(post: BasePostDTO, context?: PostEditContext): void {
     if (this.isSaving || this.post) return;
+    const editContext: PostEditContext = context ?? {
+      type: 'post', projectUid: (post as FullPostDTO).project?.uid || '',
+    };
+    if (!post.uid || (editContext.type === 'post' ? !editContext.projectUid : !editContext.parentUid)) {
+      this.notificationService.showError('Falta la referencia de la publicación o de su contexto de edición.');
+      return;
+    }
     const bootstrap = (this.document.defaultView as BootstrapWindow | null)?.bootstrap;
     if (!bootstrap) {
       this.notificationService.showError('No se pudo cargar el modal de edición. Recarga la página e intenta nuevamente.');
@@ -89,6 +109,7 @@ export class PostEditModalComponent implements OnDestroy {
     }
     this.previousFocus = this.document.activeElement as HTMLElement;
     this.post = post;
+    this.context = editContext;
     this.errorMessage = '';
     this.changeDetector.detectChanges();
     this.modal.show();
@@ -99,23 +120,31 @@ export class PostEditModalComponent implements OnDestroy {
   }
 
   async save(content: string): Promise<void> {
-    if (this.isSaving || !this.post) return;
+    if (this.isSaving || !this.post || !this.context) return;
     if (!content.trim()) {
       this.errorMessage = 'No se puede enviar una publicación en blanco.';
       return;
     }
 
-    console.log({postEditModal: this.post});
-
     const post = this.post;
+    const context = this.context;
     this.isSaving = true;
     this.errorMessage = '';
     try {
-      await this.postService.update(content, post.uid, post.project.uid);
+      if (context.type === 'post') {
+        await this.postService.update(content, post.uid, context.projectUid);
+      }
+      else if (context.type === 'insight') {
+        await this.postService.updateInsight(content, post.uid, context.parentUid);
+      }
+      else {
+        await this.postService.updateComment(content, post.uid, context.parentUid);
+      }
       if (this.destroyed) return;
       this.isSaving = false;
       this.close();
-      this.notificationService.show('Publicación actualizada.');
+      this.notificationService.show(context.type === 'insight' ? 'Insight actualizado.'
+        : context.type === 'comment' ? 'Comentario actualizado.' : 'Publicación actualizada.');
       this.updatedEvent.emit(post.uid);
     }
     catch (error: any) {

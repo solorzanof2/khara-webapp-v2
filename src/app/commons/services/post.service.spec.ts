@@ -11,6 +11,22 @@ describe('PostService update', () => {
     identity.getWorkspace.and.returnValue({ uid: 'workspace-1' });
     service = new PostService(rest, identity);
   });
+  for (const type of ['insight', 'comment'] as const) {
+    it(`envía el contrato de actualización de ${type} sin exigir project`, async () => {
+      rest.post.and.resolveTo({ status: 200 });
+      await (type === 'insight' ? service.updateInsight('Texto', 'reply-1', 'parent-1') : service.updateComment('Texto', 'reply-1', 'parent-1'));
+      expect(rest.post).toHaveBeenCalledOnceWith(`v1/posts/${type === 'insight' ? 'insights' : 'comments'}/update`, {
+        content: 'Texto', replyUid: 'reply-1', parentUid: 'parent-1', workspaceUid: 'workspace-1',
+      });
+    });
+    it(`propaga errores al actualizar ${type}`, async () => {
+      for (const status of [400, 403, 404, 500]) {
+        rest.post.and.resolveTo({ status });
+        await expectAsync(type === 'insight' ? service.updateInsight('Texto', 'reply', 'parent') : service.updateComment('Texto', 'reply', 'parent')).toBeRejected();
+      }
+    });
+  }
+
   it('envía el contrato esperado por UpdatePostHandler', async () => {
     rest.post.and.resolveTo({ status: 200 });
     await service.update('**Markdown**', 'post-1', 'project-1');

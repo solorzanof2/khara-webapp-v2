@@ -3,6 +3,7 @@ import { PostSingleComponent } from './post-single.component';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { PostService } from '../../../commons/services/post.service';
+import { PostEditModalModule } from '../../../commons/components/post-edit-modal';
 import { PostEditorModule } from '../../../commons/components/post-editor';
 import { TimelineModule } from '../../../commons/components/timeline';
 import { SanitizeHTMLModule } from '../../../commons/pipes/sanitize-html';
@@ -22,6 +23,7 @@ import { SanitizeHTMLModule } from '../../../commons/pipes/sanitize-html';
       },
     ]),
     PostEditorModule,
+    PostEditModalModule,
     TimelineModule,
     // PostViewerModule,
     SanitizeHTMLModule,

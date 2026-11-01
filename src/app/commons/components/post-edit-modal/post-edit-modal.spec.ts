@@ -1,6 +1,6 @@
 import { ChangeDetectorRef, ElementRef } from '@angular/core';
 import { PostEditModalComponent } from './post-edit-modal';
-import { FullPostDTO } from '../../models/interfaces/responses/post.response';
+import { BasePostDTO, FullPostDTO } from '../../models/interfaces/responses/post.response';
 import { PostService } from '../../services/post.service';
 import { NotificationService } from '../../services/notification.service';
 
@@ -21,14 +21,51 @@ describe('PostEditModalComponent', () => {
       }
     });
     const doc = { defaultView: { bootstrap: { Modal: function () { return modal; } } }, activeElement: null } as unknown as Document;
-    posts = jasmine.createSpyObj('PostService', ['update']);
+    posts = jasmine.createSpyObj('PostService', ['update', 'updateInsight', 'updateComment']);
     posts.update.and.resolveTo();
+    posts.updateInsight.and.resolveTo();
+    posts.updateComment.and.resolveTo();
     changes = jasmine.createSpyObj('ChangeDetectorRef', ['detectChanges']);
     const notifications = jasmine.createSpyObj('NotificationService', ['show', 'showError']);
     component = new PostEditModalComponent(doc, changes, posts, notifications);
     component.modalElement = new ElementRef(element);
   });
   afterEach(() => component.ngOnDestroy());
+
+  for (const type of ['insight', 'comment'] as const) {
+    it(`edita un ${type} sin project usando el padre y su endpoint específico`, async () => {
+      const reply = { uid: 'reply-1', rawContent: 'Original' } as BasePostDTO;
+      component.open(reply, { type, parentUid: 'parent-1' });
+      expect(component.title).toBe(type === 'insight' ? 'Editar insight' : 'Editar comentario');
+      spyOn(component.updatedEvent, 'emit');
+      await component.save('Editado');
+      expect(type === 'insight' ? posts.updateInsight : posts.updateComment).toHaveBeenCalledOnceWith('Editado', 'reply-1', 'parent-1');
+      expect(type === 'insight' ? posts.updateComment : posts.updateInsight).not.toHaveBeenCalled();
+      expect(posts.update).not.toHaveBeenCalled();
+      expect(component.updatedEvent.emit).toHaveBeenCalledOnceWith('reply-1');
+      component.open(selected);
+      await component.save('Post editado');
+      expect(posts.update).toHaveBeenCalledOnceWith('Post editado', 'post-1', 'project-1');
+    });
+    it(`conserva el editor de ${type} tras un error sin emitir actualización`, async () => {
+      const reply = { uid: 'reply-1', rawContent: 'Original' } as BasePostDTO;
+      const update = type === 'insight' ? posts.updateInsight : posts.updateComment;
+      update.and.rejectWith(new Error('Error al actualizar'));
+      component.open(reply, { type, parentUid: 'parent-1' });
+      spyOn(component.updatedEvent, 'emit');
+      await component.save('Editado');
+      expect(component.post).toBe(reply);
+      expect(component.errorMessage).toBe('Error al actualizar');
+      expect(component.updatedEvent.emit).not.toHaveBeenCalled();
+      expect(component.isSaving).toBeFalse();
+    });
+  }
+  it('no abre una respuesta sin padre ni un post sin proyecto', () => {
+    component.open({ uid: 'reply-1' } as BasePostDTO, { type: 'comment', parentUid: '' });
+    expect(modal.show).not.toHaveBeenCalled();
+    component.open({ uid: 'post-1' } as FullPostDTO);
+    expect(modal.show).not.toHaveBeenCalled();
+  });
 
   it('carga rawContent y descarta el borrador al cancelar sin modificar la publicación', () => {
     component.open(selected);

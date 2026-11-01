@@ -1,6 +1,7 @@
 import { ActivatedRoute, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { TimelineComponent } from '../../../commons/components/timeline';
+import { PostEditModalComponent } from '../../../commons/components/post-edit-modal';
 import { PostEditorComponent } from '../../../commons/components/post-editor';
 import { BasePostDTO, FullPostDTO, InsightPostDTO } from '../../../commons/models/interfaces/responses/post.response';
 import { NotificationService } from '../../../commons/services/notification.service';
@@ -25,6 +26,53 @@ describe('PostSingleComponent', () => {
     );
     component.timeline = jasmine.createSpyObj<TimelineComponent>('TimelineComponent', ['complete']);
     component.editor = { source: 'Borrador' } as PostEditorComponent;
+  });
+
+  it('edita el post principal mediante la API original del modal', () => {
+    component.loading = false;
+    const open = jasmine.createSpy('open');
+    component.postEditModal = { open } as unknown as PostEditModalComponent;
+    component.post = { uid: 'post-uid', project: { uid: 'project-uid' } } as FullPostDTO;
+    component.editClickEventHandler(component.post);
+    expect(open).toHaveBeenCalledOnceWith(component.post);
+  });
+
+  for (const type of ['comment', 'insight'] as const) {
+    it(`identifica ${type} por la colección y proporciona el padre sin requerir project`, () => {
+      component.loading = false;
+      const open = jasmine.createSpy('open');
+      component.postEditModal = { open } as unknown as PostEditModalComponent;
+      const reply = { uid: 'reply-uid', rawContent: 'Original' } as InsightPostDTO;
+      component.post = { uid: 'post-uid', comments: type === 'comment' ? [reply] : [], insights: type === 'insight' ? [reply] : [] } as unknown as FullPostDTO;
+      component.editPostEventHandler(reply);
+      expect(open).toHaveBeenCalledOnceWith(reply, { type, parentUid: 'post-uid' });
+    });
+  }
+
+  it('refresca el post y sus respuestas sin borrar el borrador del editor de creación', async () => {
+    const comment = { uid: 'comment', rawContent: 'Editado', created: 100 } as BasePostDTO;
+    const insight = { uid: 'insight', rawContent: 'Original', created: 50 } as InsightPostDTO;
+    postService.fetchPostByUid.and.resolveTo({ uid: 'post-uid', htmlContent: 'Actualizado', totalComments: 1, totalInsights: 1, comments: [comment], insights: [insight] } as FullPostDTO);
+    await component.updatedPostEventHandler();
+    expect(postService.fetchPostByUid).toHaveBeenCalledOnceWith('post-uid');
+    expect(component.post.htmlContent).toBe('Actualizado');
+    expect(component.posts).toEqual([comment, insight]);
+    expect(component.post.totalComments).toBe(1);
+    expect(component.post.totalInsights).toBe(1);
+    expect(component.editor.source).toBe('Borrador');
+  });
+
+  it('no abre el modal para respuestas ajenas ni mientras se guarda o carga', () => {
+    const open = jasmine.createSpy('open');
+    component.postEditModal = { open } as unknown as PostEditModalComponent;
+    component.post = { uid: 'post-uid', comments: [], insights: [] } as unknown as FullPostDTO;
+    component.editClickEventHandler(component.post);
+    component.loading = false;
+    component.saving = true;
+    component.editClickEventHandler(component.post);
+    component.saving = false;
+    component.editPostEventHandler({ uid: 'unknown' } as BasePostDTO);
+    expect(open).not.toHaveBeenCalled();
   });
 
   it('ignores timeline load events while the post is still loading', async () => {
