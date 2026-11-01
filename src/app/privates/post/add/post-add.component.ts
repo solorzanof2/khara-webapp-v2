@@ -105,7 +105,7 @@ export class PostAddComponent implements OnInit {
 
   async updateData(value: string): Promise<void> {
     try {
-      await this.postService.update(value, this.uidReference);
+      await this.postService.update(value, this.uidReference, this.post.project.uid);
       await this.notificationService.show('Publicación actualizada.');
     }
     catch (error: any) {

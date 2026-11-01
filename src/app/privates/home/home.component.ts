@@ -5,6 +5,7 @@ import { PaginatedResponse } from '../../commons/models/interfaces/responses/api
 import { FullPostDTO } from '../../commons/models/interfaces/responses/post.response';
 import { Router } from '@angular/router';
 import { PostEditorComponent } from '../../commons/components/post-editor/post-editor';
+import { PostEditModalComponent } from '../../commons/components/post-edit-modal';
 import { NotificationService } from '../../commons/services/notification.service';
 
 
@@ -20,6 +21,8 @@ export class HomeComponent implements OnInit {
   @ViewChild(TimelineComponent) timeline!: TimelineComponent;
 
   @ViewChild(PostEditorComponent) postEditor!: PostEditorComponent;
+
+  @ViewChild(PostEditModalComponent) postEditModal!: PostEditModalComponent;
 
   isPublishing = false;
 
@@ -152,11 +155,18 @@ export class HomeComponent implements OnInit {
   }
 
   editPostEventHandler(post: FullPostDTO): void {
-    this.router.navigate(['webapp', 'posts', 'add'], {
-      queryParams: {
-        ref: post.uid,
-      },
-    });
+    this.postEditModal.open(post);
+  }
+
+  async updatedPostEventHandler(uid: string): Promise<void> {
+    try {
+      console.log({homeComponentPostUid: uid});
+      const updated = await this.postService.fetchPostByUid(uid);
+      this.posts = this.posts.map(post => post.uid === uid ? updated : post);
+    }
+    catch (error: any) {
+      this.notificationService.showError('La publicación se guardó, pero no se pudo refrescar: ' + error.message);
+    }
   }
 
   // #endregion EVENTS

@@ -6,6 +6,7 @@ import { PostService } from '../../commons/services/post.service';
 import { TimelineModule } from '../../commons/components/timeline';
 // import { ProjectService } from '../../commons/services/project.service';
 import { SquareButtonModule } from '../../commons/components/square-button';
+import { PostEditModalModule } from '../../commons/components/post-edit-modal';
 import { PostEditorModule } from '../../commons/components/post-editor';
 
 
@@ -24,6 +25,7 @@ import { PostEditorModule } from '../../commons/components/post-editor';
     TimelineModule,
     SquareButtonModule,
     PostEditorModule,
+    PostEditModalModule,
   ],
   providers: [
     PostService,

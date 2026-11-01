@@ -110,9 +110,24 @@ export class PostService extends BaseService {
     }
   }
 
-  async update(value: string, uidReference: string): Promise<void> {
+  async update(value: string, uidReference: string, projectUid: string): Promise<void> {
     try {
+      const workspace = this.identityService.getWorkspace();
+      const request = {
+        content: value,
+        postUid: uidReference,
+        projectUid,
+        workspaceUid: workspace.uid,
+      };
+      const { status } = await this.restService.post<ApiResponse<unknown>>('v1/posts/update', request);
 
+      Exception.isDefaultErrorStatus(status);
+      Exception.isBadRequest(status, 'Uno o más datos enviados son inválidos.');
+      Exception.isNotFoundStatus(status, 'La publicación, el proyecto o el workspace no existe o no es accesible.');
+      if (status < 200 || status >= 300) {
+        throw new Error('No se pudo actualizar la publicación.');
+      }
+      return this.noContent();
     }
     catch (error: any) {
       return this.error(error);

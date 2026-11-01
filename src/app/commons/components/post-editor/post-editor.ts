@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, NgModule, OnInit, Output, ViewChild, ViewEncapsulation } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, NgModule, OnDestroy, OnInit, Output, ViewChild, ViewEncapsulation } from '@angular/core';
 import { StacksEditor } from '@stackoverflow/stacks-editor';
 import "@stackoverflow/stacks-editor/dist/styles.css";
 import "@stackoverflow/stacks";
@@ -25,7 +25,7 @@ import "@stackoverflow/stacks/dist/css/stacks.css";
             class="btn btn-success btn-sm"
             [disabled]="saving"
             (click)="submitClickEventHandler()"
-          >Publish</button>
+          >{{submitText}}</button>
         </div>
       </div>
     </div>
@@ -42,7 +42,7 @@ import "@stackoverflow/stacks/dist/css/stacks.css";
   standalone: false,
   encapsulation: ViewEncapsulation.Emulated,
 })
-export class PostEditorComponent implements OnInit {
+export class PostEditorComponent implements OnInit, OnDestroy {
   @ViewChild('postEditor', { static: true }) postEditorRef!: ElementRef<HTMLDivElement>;
 
   private stackEditor?: StacksEditor;
@@ -53,6 +53,8 @@ export class PostEditorComponent implements OnInit {
   }
 
   @Input() saving = false;
+
+  @Input() submitText = 'Publish';
 
   @Input() headerText = 'Haz una publicación';
 
@@ -72,6 +74,10 @@ export class PostEditorComponent implements OnInit {
 
   ngOnInit(): void {
     this.stackEditor = new StacksEditor(this.postEditor, this.pendingSource);
+  }
+
+  ngOnDestroy(): void {
+    this.stackEditor?.destroy();
   }
 
   submitClickEventHandler(): void {
