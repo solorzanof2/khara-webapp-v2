@@ -4,6 +4,7 @@ import { TimelineComponent } from '../../commons/components/timeline';
 import { PaginatedResponse } from '../../commons/models/interfaces/responses/api.response';
 import { FullPostDTO } from '../../commons/models/interfaces/responses/post.response';
 import { Router } from '@angular/router';
+import { PostEditorComponent } from '../../commons/components/post-editor/post-editor';
 import { NotificationService } from '../../commons/services/notification.service';
 
 
@@ -17,6 +18,10 @@ export class HomeComponent implements OnInit {
   private readonly DefaultPerPage: number = 10;
 
   @ViewChild(TimelineComponent) timeline!: TimelineComponent;
+
+  @ViewChild(PostEditorComponent) postEditor!: PostEditorComponent;
+
+  isPublishing = false;
 
   pagination: PaginatedResponse<FullPostDTO> = {
     collection: new Array<FullPostDTO>(),
@@ -111,6 +116,33 @@ export class HomeComponent implements OnInit {
         this.notificationService.showError(error.message);
       }
     })();
+  }
+
+  async savePostEventHandler(value: string): Promise<void> {
+    if (this.isPublishing) {
+      return;
+    }
+
+    if (!value.trim()) {
+      this.notificationService.showWarning('No se puede enviar una publicación en blanco.');
+      return;
+    }
+
+    this.isPublishing = true;
+    try {
+      await this.postService.save(value);
+      this.postEditor.source = '';
+      this.notificationService.show('Publicación almacenada.');
+      this.resetPage();
+      this.posts = [];
+      await this.fetchData();
+    }
+    catch (error: any) {
+      this.notificationService.showError(error.message);
+    }
+    finally {
+      this.isPublishing = false;
+    }
   }
 
   selectedPostEventHandler(post: FullPostDTO): void {

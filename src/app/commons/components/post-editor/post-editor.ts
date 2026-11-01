@@ -21,7 +21,9 @@ import "@stackoverflow/stacks/dist/css/stacks.css";
       <div class="col-12 mt-3">
         <div class="save-button-container" align="end">
           <button
+            type="button"
             class="btn btn-success btn-sm"
+            [disabled]="saving"
             (click)="submitClickEventHandler()"
           >Publish</button>
         </div>
@@ -50,6 +52,8 @@ export class PostEditorComponent implements OnInit {
     return this.postEditorRef.nativeElement;
   }
 
+  @Input() saving = false;
+
   @Input() headerText = 'Haz una publicación';
 
   @Input() set source(value: string) {
@@ -71,6 +75,10 @@ export class PostEditorComponent implements OnInit {
   }
 
   submitClickEventHandler(): void {
+    if (this.saving) {
+      return;
+    }
+
     this.saveEvent.emit(this.stackEditor?.content || '');
   }
 

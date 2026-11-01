@@ -11,6 +11,8 @@
           <div class="content-timeline">
             <app-post-editor
               headerText=""
+              [saving]="isPublishing"
+              (saveEvent)="savePostEventHandler($event)"
             ></app-post-editor>
             <div class="custom-separator"></div>
             <app-timeline

@@ -84,7 +84,7 @@ export class PostService extends BaseService {
     }
   }
 
-  async save(value: string, projectUid: string): Promise<void> {
+  async save(value: string, projectUid?: string): Promise<void> {
     try {
       const workspace = this.identityService.getWorkspace();
 
