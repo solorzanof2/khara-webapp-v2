@@ -6,7 +6,9 @@ import { PostService } from '../../../commons/services/post.service';
 import { TimelineComponent } from '../../../commons/components/timeline';
 import { PostEditModalComponent } from '../../../commons/components/post-edit-modal';
 import { PostEditorComponent } from '../../../commons/components/post-editor';
+import { PostTypeEvent } from './post-type';
 
+type PostType = 'comment' | 'insight';
 
 @Component({
   selector: 'app-post-single',
@@ -18,7 +20,7 @@ export class PostSingleComponent implements OnInit {
   @ViewChild(TimelineComponent) timeline!: TimelineComponent;
   @ViewChild(PostEditorComponent) editor!: PostEditorComponent;
   @ViewChild(PostEditModalComponent) postEditModal!: PostEditModalComponent;
-  publicationType: 'comment' | 'insight' = 'comment';
+  publicationType: PostType = 'comment';
   saving = false;
   loading = true;
 
@@ -138,21 +140,28 @@ export class PostSingleComponent implements OnInit {
 
   selectedPostEventHandler(post: FullPostDTO): void {
     this.router.navigate([
-      'webapp', 'posts', post.uid,
+      'webapp', 'insights', post.uid,
     ]);
   }
 
   editPostEventHandler(reply: BasePostDTO): void {
     if (this.loading || this.saving || !this.post.uid) return;
     // Membership in the parent collections determines the endpoint, not optional DTO metadata.
-    const type = this.post.insights.some(insight => insight.uid === reply.uid) ? 'insight'
-      : this.post.comments.some(comment => comment.uid === reply.uid) ? 'comment' : undefined;
+    const type = this.post.insights.some(insight => insight.uid === reply.uid)
+      ? 'insight'
+      : this.post.comments.some(comment => comment.uid === reply.uid)
+        ? 'comment'
+        : undefined;
     if (!type) return;
     this.postEditModal.open(reply, { type, parentUid: this.post.uid });
   }
 
   async updatedPostEventHandler(): Promise<void> {
     await this.fetchData();
+  }
+
+  selectionPostTypeEventHandler(postTypeEvent: PostTypeEvent): void {
+    this.publicationType = postTypeEvent.value as PostType;
   }
 
   // #endregion EVENTS

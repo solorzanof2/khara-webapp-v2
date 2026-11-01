@@ -1,0 +1,95 @@
+<section id="app-post-insight">
+  <div class="container">
+    <div class="row">
+      <div class="col-xs-12 col-sm-12 col-md-8 col-lg-8 col-xl-8">
+        <div class="border-laterals">
+          <div class="card post-card">
+            <div class="card-header d-flex justify-content-between align-items-start gap-2">
+              <small>
+                <strong>{{insight.displayName}}</strong> &hyphen;
+                <a href="javascript:void(0)">&#64;{{insight.mention}}</a> &hyphen;
+                <small>{{insight.createdLabel}}</small>
+              </small>
+              <a
+                href="javascript:void(0)"
+                title="Editar insight"
+                (click)="editInsightEventHandler()"
+              ><i class="zmdi zmdi-edit"></i><small> Editar</small></a>
+            </div>
+            <div
+              class="card-body"
+              [innerHTML]="insight.htmlContent | SanitizeHTML"
+            ></div>
+            <div class="card-footer">
+              <table class="w-100">
+                <tr>
+                  <td class="col-2"><small>{{insight.totalBricks}} Bricks</small></td>
+                  <td class="col-3"><small>{{insight.totalComments}} Comentarios</small></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          <div class="main-content">
+            <div class="content-timeline">
+              <app-post-insight-type-selector
+                [disabled]="saving || loading || !insight.uid"
+                (selectionEvent)="selectionReplyTypeEventHandler($event)"
+              ></app-post-insight-type-selector>
+              <app-brick-fields *ngIf="brickFieldsInitialized"
+                [hidden]="publicationType !== 'insight-brick'"
+                [insightUid]="insight.uid || ''"
+                [disabled]="saving || loading"
+              ></app-brick-fields>
+              <p *ngIf="publicationError" class="text-danger px-2 mt-2" role="alert">{{publicationError}}</p>
+              <app-post-editor
+                headerText=""
+                [saving]="saving || loading || !insight.uid"
+                [submitText]="saving ? 'Publicando…' : publicationType === 'insight-brick' ? 'Publicar brick' : 'Publicar comentario'"
+                (saveEvent)="saveEventHandler($event)"
+              ></app-post-editor>
+              <div class="custom-separator"></div>
+              <app-timeline
+                [collection]="replies"
+                [brickTimeControls]="true" [brickTimeDisabled]="saving || loading"
+                (brickTimeEvent)="brickTimeEventHandler($event)"
+                (nextEvent)="timelineNextEventHandler()"
+                (editEvent)="editReplyEventHandler($event)"
+              ></app-timeline>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-xs-12 col-sm-12 col-md-4 col-lg-4 col-xl-4">
+        <div class="complementary-content" *ngIf="insight.project as project">
+          <div class="card card-white no-radius">
+            <div class="card-header">Proyecto</div>
+            <div class="card-body">
+              <h5 class="mb-1">{{project.name}}</h5>
+              <small class="text-muted">{{project.key}}</small>
+              <dl class="row small mt-3 mb-0">
+                <dt class="col-5">Visibilidad</dt>
+                <dd class="col-7">{{project.visibilityLabel}}</dd>
+                <dt class="col-5">Estado</dt>
+                <dd class="col-7">{{project.statusLabel}}</dd>
+                <dt class="col-5">Creado</dt>
+                <dd class="col-7">{{project.createdLabel}}</dd>
+                <dt class="col-5">Actualizado</dt>
+                <dd class="col-7 mb-0">{{project.updatedLabel}}</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+        <div class="complementary-content mt-3">
+          <form id="search-form">
+            <div class="form-group">
+              <input type="text" name="searchInput" id="searchInput" class="form-control" placeholder="Search in Khara">
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <app-post-edit-modal
+    (updatedEvent)="updatedInsightEventHandler()"
+  ></app-post-edit-modal>
+</section>

@@ -5,12 +5,16 @@
         <div class="border-laterals">
           <div class="card post-card">
             <div class="card-header d-flex justify-content-between align-items-start gap-2">
-              <small><strong>{{post.displayName}}</strong> &hyphen; <a href="javascript:void(0)">&#64;{{post.mention}}</a></small>
+              <small>
+                <strong>{{post.displayName}}</strong> &hyphen;
+                <a href="javascript:void(0)">&#64;{{post.mention}}</a> &hyphen;
+                <small>{{post.createdLabel}}</small>
+              </small>
               <a
                 href="javascript:void(0)"
                 title="Editar publicación"
                 (click)="editClickEventHandler(post)"
-              >Editar</a>
+              ><i class="zmdi zmdi-edit"></i><small> Editar</small></a>
             </div>
             <div
               class="card-body"
@@ -21,23 +25,16 @@
                 <tr>
                   <td class="col-2"><small>{{post.totalInsights}} Insights</small></td>
                   <td class="col-3"><small>{{post.totalComments}} Comentarios</small></td>
-                  <td class="col-3"><small>{{post.createdLabel}}</small></td>
                 </tr>
               </table>
             </div>
           </div>
           <div class="main-content">
             <div class="content-timeline">
-              <fieldset class="mt-3 ml-1" [disabled]="saving || loading || !post.uid">
-                <div class="btn-group btn-group-sm" role="group" aria-label="Tipo de publicación">
-                  <input type="radio" class="btn-check" name="publicationType" id="publication-comment"
-                    [checked]="publicationType === 'comment'" (change)="publicationType = 'comment'">
-                  <label class="btn btn-outline-primary" for="publication-comment">Comentario</label>
-                  <input type="radio" class="btn-check" name="publicationType" id="publication-insight"
-                    [checked]="publicationType === 'insight'" (change)="publicationType = 'insight'">
-                  <label class="btn btn-outline-primary" for="publication-insight">Insight</label>
-                </div>
-              </fieldset>
+              <app-post-type-selector
+                [disabled]="saving || loading || !post.uid"
+                (selectionEvent)="selectionPostTypeEventHandler($event)"
+              ></app-post-type-selector>
               <app-post-editor
                 headerText=""
                 [saving]="saving || loading || !post.uid"
@@ -85,5 +82,7 @@
       </div>
     </div>
   </div>
-  <app-post-edit-modal (updatedEvent)="updatedPostEventHandler()"></app-post-edit-modal>
+  <app-post-edit-modal
+    (updatedEvent)="updatedPostEventHandler()"
+  ></app-post-edit-modal>
 </section>

@@ -1,3 +1,5 @@
+import { registerLocaleData } from '@angular/common';
+import localeEsAr from '@angular/common/locales/es-AR';
 import { DEFAULT_CURRENCY_CODE, LOCALE_ID, NgModule } from '@angular/core';
 import { AppComponent } from './app.component';
 import { BrowserModule } from '@angular/platform-browser';
@@ -13,6 +15,8 @@ import { RestService } from './commons/services/rest.service';
 import { NotificationService } from './commons/services/notification.service';
 // import { InterceptorService } from './commons/services/interceptor.service';
 
+
+registerLocaleData(localeEsAr);
 
 @NgModule({
   declarations: [

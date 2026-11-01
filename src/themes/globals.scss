@@ -163,6 +163,34 @@ a {
   border-radius: 0 !important;
 }
 
+.btn-xs {
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .5s;
+  border-radius: .25rem;
+  padding: 3px 5px;
+  text-decoration: none;
+  background: transparent;
+  color: #0d6efd;
+}
+
+.btn-xs-square {
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .5s;
+  border-radius: .25rem;
+  padding: 3px 5px;
+  text-decoration: none;
+  background: transparent;
+  color: #0d6efd;
+  height: 32px;
+  width: 32px;
+}
+
 /** media query */
 
 @media (min-width: 320px) { }

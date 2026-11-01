@@ -32,6 +32,10 @@ const Routes: Route[] = [
         path: 'posts/:ref',
         loadChildren: () => import('./post/single/post-single.module').then(module => module.PostSingleModule),
       },
+      {
+        path: 'insights/:ref',
+        loadChildren: () => import('./post/insight/post-insight.module').then(module => module.PostInsightModule),
+      },
     ],
   },
   {

@@ -1,3 +1,4 @@
+import { BrickTimeEvent, BrickTimeModule } from '../brick-time/brick-time';
 import { AfterViewInit, Component, ElementRef, EventEmitter, Input, NgModule, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SpinnerModule } from '../spinner';
@@ -14,17 +15,38 @@ import { SanitizeHTMLModule } from '../../pipes/sanitize-html';
       >
         <div class="card post-card">
           <div class="card-header d-flex justify-content-between align-items-start gap-2">
-            <small><strong>{{post.displayName}}</strong> &hyphen; <a href="javascript:void(0)">&#64;{{post.mention}}</a></small>
+            <small>
+              <ng-container
+                *ngIf="post.type === 'insight'"
+              >
+                <span class="badge text-bg-warning">Insight</span>
+              </ng-container>
+              <ng-container
+                *ngIf="post.type === 'comment' || post.type === 'insight-comment'"
+              >
+                <span class="badge text-bg-secondary">Comentario</span>
+              </ng-container>
+              <span *ngIf="post.type === 'insight-brick'" class="badge text-bg-info">Brick</span>
+              <strong> {{post.displayName}}</strong> &hyphen;
+              <a href="javascript:void(0)">&#64;{{post.mention}}</a> &hyphen;
+              <small>{{post.createdLabel}}</small>
+            </small>
             <a
               href="javascript:void(0)"
               title="Editar publicación"
               (click)="editClickEventHandler(post)"
-            >Editar</a>
+            ><i class="zmdi zmdi-edit"></i><small> Editar</small></a>
           </div>
           <div
             class="card-body"
             [innerHTML]="post.htmlContent | SanitizeHTML"
           ></div>
+          <app-brick-time
+            *ngIf="brickTimeControls && post.type === 'insight-brick'"
+            [brick]="post"
+            [disabled]="brickTimeDisabled"
+            (actionEvent)="brickTimeEvent.emit($event)"
+          ></app-brick-time>
           <div class="card-footer">
             <table class="w-100">
               <tr>
@@ -35,19 +57,6 @@ import { SanitizeHTMLModule } from '../../pipes/sanitize-html';
                   <td class="col-2"><small>{{post.totalInsights}} Insights</small></td>
                   <td class="col-3"><small>{{post.totalComments}} Comentarios</small></td>
                 </ng-container>
-                <!-- Si es un insight muestra un badge de tipo warning -->
-                <ng-container
-                  *ngIf="post.type === 'insight'"
-                >
-                  <td class="col-2"><span class="badge text-bg-warning">Insight</span></td>
-                </ng-container>
-                <!-- Si es un comment muestra un badge de tipo info -->
-                <ng-container
-                  *ngIf="post.type === 'comment'"
-                >
-                  <td class="col-3"><span class="badge text-bg-info">Comentario</span></td>
-                </ng-container>
-                <td class="col-3"><small>{{post.createdLabel}}</small></td>
                 <!-- Si es un insight o un post muestra un badge de tipo warning -->
                 <ng-container
                   *ngIf="!(!!post.type) || post.type === 'insight'"
@@ -138,6 +147,9 @@ export class TimelineComponent implements AfterViewInit {
 
   @ViewChild('spinnerWrapper') spinnerWrapper!: ElementRef<HTMLDivElement>;
 
+  @Input() brickTimeControls = false;
+  @Input() brickTimeDisabled = false;
+  @Output() brickTimeEvent = new EventEmitter<BrickTimeEvent>();
   @Input() collection: any[] = new Array<any>();
 
   @Output() nextEvent: EventEmitter<void> = new EventEmitter<void>();
@@ -200,6 +212,7 @@ export class TimelineComponent implements AfterViewInit {
   imports: [
     CommonModule,
     SpinnerModule,
+    BrickTimeModule,
     SanitizeHTMLModule,
   ],
   exports: [

@@ -1,9 +1,13 @@
+import { BrickAttributes } from '../brick';
 import { Project } from './project.response';
 
 
 export interface BasePostDTO {
 
-  type?: 'comment' | 'insight';
+  attributes?: BrickAttributes;
+  category?: string;
+
+  type?: 'comment' | 'insight' | 'insight-comment' | 'insight-brick';
 
   uid: string;
   rawContent: string;
@@ -36,3 +40,9 @@ export interface FullPostDTO extends BasePostDTO {
 
 }
 
+
+export interface FullInsightDTO extends InsightPostDTO {
+  parentUid: string;
+  totalBricks: number;
+  project: Project;
+}
