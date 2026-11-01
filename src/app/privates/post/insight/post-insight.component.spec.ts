@@ -21,7 +21,7 @@ describe('PostInsightComponent', () => {
     component.editor = { source: 'Borrador' } as PostEditorComponent;
     component.postEditModal = jasmine.createSpyObj<PostEditModalComponent>('Modal', ['open']);
     component.insight = { uid: 'insight', parentUid: 'post', comments: [], bricks: [], totalComments: 0, totalBricks: 0 } as unknown as FullInsightDTO;
-    component.brickFields = { read: () => ({ category: 'General', duration: { amount: '1,5', unit: 'hours' } }), reset: jasmine.createSpy('reset') } as unknown as BrickFieldsComponent;
+    component.brickFields = { read: () => ({ category: 'General' }), reset: jasmine.createSpy('reset') } as unknown as BrickFieldsComponent;
     component.loading = false;
   });
   it('loads the insight, combines its children by date, and keeps the draft during refresh', async () => {
@@ -42,11 +42,11 @@ describe('PostInsightComponent', () => {
   });
   it('does not submit invalid brick fields or clear the description', async () => {
     component.publicationType = 'insight-brick';
-    spyOn(component.brickFields!, 'read').and.throwError('Duración inválida');
+    spyOn(component.brickFields!, 'read').and.throwError('Categoría inválida');
     await component.saveEventHandler('Texto');
     expect(service.saveInsightBrick).not.toHaveBeenCalled();
     expect(component.editor.source).toBe('Borrador');
-    expect(component.publicationError).toBe('Duración inválida');
+    expect(component.publicationError).toBe('Categoría inválida');
   });
   it('preserves description and fields when publishing a brick fails', async () => {
     component.publicationType = 'insight-brick';
@@ -61,10 +61,26 @@ describe('PostInsightComponent', () => {
     const updated = { ...original, category: 'General' };
     component.insight.bricks = [original]; service.updateBrickTime.and.resolveTo(updated);
     await component.brickTimeEventHandler({ brick: original, action: 'finish' });
-    expect(service.updateBrickTime).toHaveBeenCalledOnceWith('brick', 'insight', 'finish', undefined);
+    expect(service.updateBrickTime).toHaveBeenCalledOnceWith('brick', 'insight', 'finish', undefined, undefined);
     expect(component.insight.bricks).toEqual([updated]);
     expect(component.editor.source).toBe('Borrador');
     expect(component.saving).toBeFalse();
+  });
+  it('displays server-calculated manual measurements only after saving succeeds', async () => {
+    const brick = { uid: 'brick', attributes: {} } as BasePostDTO;
+    component.insight.bricks = [brick];
+    const interval = { startedAt: 1000, finishedAt: 5401000 };
+    const updated = { ...brick, attributes: { time: { measurements: [{ ...interval, millis: 5400000, label: '1h 30min', reported: false, createdAt: 9999 }],
+      totals: { millis: 5400000, label: '1h 30min', reported: '0s', createdAt: 9999, updatedAt: 9999 } } } };
+    let resolve!: (value: BasePostDTO) => void;
+    service.updateBrickTime.and.returnValue(new Promise(done => resolve = done));
+    const saving = component.brickTimeEventHandler({ brick, action: 'add', interval });
+    expect(component.insight.bricks).toEqual([brick]);
+    expect(component.saving).toBeTrue();
+    resolve(updated); await saving;
+    expect(service.updateBrickTime).toHaveBeenCalledOnceWith('brick', 'insight', 'add', undefined, interval);
+    expect(component.replies).toEqual([updated]);
+    expect(component.insight.bricks[0].attributes?.time?.totals.label).toBe('1h 30min');
   });
   it('keeps the displayed data on a failed timer action', async () => {
     const brick = { uid: 'brick' } as BasePostDTO; component.insight.bricks = [brick];
@@ -86,7 +102,7 @@ describe('PostInsightComponent', () => {
       const save = type === 'insight-brick' ? service.saveInsightBrick : service.saveInsightComment;
       save.and.resolveTo(reply);
       await component.saveEventHandler('Contenido');
-      if (type === 'insight-brick') expect(save).toHaveBeenCalledOnceWith('Contenido', 'insight', { category: 'General', duration: { amount: '1,5', unit: 'hours' } });
+      if (type === 'insight-brick') expect(save).toHaveBeenCalledOnceWith('Contenido', 'insight', { category: 'General' });
       else expect(save).toHaveBeenCalledOnceWith('Contenido', 'insight');
       expect(component.replies).toEqual([reply]);
       expect(component.insight.totalComments).toBe(type === 'insight-comment' ? 1 : 0);

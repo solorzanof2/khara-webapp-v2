@@ -181,7 +181,7 @@ export class PostInsightComponent implements OnInit {
     if (this.loading || this.saving || !this.insight.bricks.some(row => row.uid === event.brick.uid)) return;
     this.saving = true;
     try {
-      const brick = await this.postService.updateBrickTime(event.brick.uid, this.insight.uid, event.action, event.measurementIndex);
+      const brick = await this.postService.updateBrickTime(event.brick.uid, this.insight.uid, event.action, event.measurementIndex, event.interval);
       this.insight.bricks = this.insight.bricks.map(row => row.uid === brick.uid ? brick : row);
       this.refreshTimeline();
     }

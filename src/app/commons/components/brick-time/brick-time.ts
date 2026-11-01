@@ -1,9 +1,10 @@
 import { Component, EventEmitter, Input, NgModule, OnDestroy, OnInit, Output } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { BasePostDTO } from '../../models/interfaces/responses/post.response';
-import { BrickMeasurement } from '../../models/interfaces/brick';
+import { BrickMeasurement, BrickTimeInterval } from '../../models/interfaces/brick';
 
-export interface BrickTimeEvent { brick: BasePostDTO; action: 'start' | 'finish' | 'report'; measurementIndex?: number; }
+export interface BrickTimeEvent { brick: BasePostDTO; action: 'start' | 'finish' | 'report' | 'add'; measurementIndex?: number; interval?: BrickTimeInterval; }
 @Component({
   selector: 'app-brick-time', standalone: false,
   template: `
@@ -19,14 +20,14 @@ export interface BrickTimeEvent { brick: BasePostDTO; action: 'start' | 'finish'
             [disabled]="disabled"
             (click)="emit(active ? 'finish' : 'start')"
           >
-            <small>{{active ? 'FINALIZAR' : 'INICIAR'}}</small>
+            {{active ? 'Finalizar' : 'Iniciar'}}
           </button>
           <button
             class="btn-xs"
             [disabled]="disabled || !hasUnreported"
             (click)="emit('report')"
           >
-            <small>MARCAR TODO REPORTADO</small>
+            Marcar todo Reportado
           </button>
         </div>
       </div>
@@ -35,11 +36,7 @@ export interface BrickTimeEvent { brick: BasePostDTO; action: 'start' | 'finish'
         class="text-success d-block mt-1"
         role="status"
       >En curso: {{elapsedLabel}}</small>
-      <details
-        *ngIf="measurements.length"
-        class="mt-2"
-      >
-        <summary class="small">Historial de tiempos ({{measurements.length}})</summary>
+      <div class="mt-2">
         <div class="table-responsive">
           <table class="table table-sm small mb-0">
             <thead>
@@ -51,6 +48,7 @@ export interface BrickTimeEvent { brick: BasePostDTO; action: 'start' | 'finish'
               </tr>
             </thead>
             <tbody>
+              <tr *ngIf="!measurements.length"><td colspan="4" class="text-muted">Sin tiempos registrados.</td></tr>
               <tr
                 *ngFor="let measurement of measurements; let index = index"
               >
@@ -59,27 +57,73 @@ export interface BrickTimeEvent { brick: BasePostDTO; action: 'start' | 'finish'
                 <td>{{measurement.finishedAt === null ? elapsedLabel : measurement.label}}</td>
                 <td>
                   <span *ngIf="measurement.reported">Reportado</span>
-                  <a
+                  <button
                     *ngIf="!measurement.reported && measurement.finishedAt !== null"
-                    href="javascript:void(0)"
-                    [attr.disabled]="disabled"
+                    class="btn-xs"
+                    [disabled]="disabled"
                     (click)="emit('report', index)"
-                  >Reportado</a>
+                  >Reportado</button>
                   <span *ngIf="measurement.finishedAt === null">En curso</span>
                 </td>
               </tr>
             </tbody>
+            <tfoot>
+              <tr>
+                <td>
+                  <input
+                    type="datetime-local"
+                    step="1"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="manualStart"
+                    [ngModelOptions]="{standalone: true}"
+                    [disabled]="disabled"
+                  >
+                  <!-- <label class="d-block">Fecha/hora de inicio</label> -->
+                </td>
+                <td>
+                  <input
+                    type="datetime-local"
+                    step="1"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="manualFinish"
+                    [ngModelOptions]="{standalone: true}"
+                    [disabled]="disabled"
+                  >
+                  <!-- <label class="d-block">Fecha/hora de fin</label> -->
+                </td>
+                <td colspan="2" class="align-bottom">
+                  <div class="save-action-wrapper">
+                    <button
+                      type="button"
+                      class="btn-xs"
+                      [disabled]="disabled"
+                      (click)="addInterval()"
+                    >Guardar intervalo</button>
+                  </div>
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
-      </details>
+        <small class="text-muted">Ingresa las fechas en tu hora local. La duración se calcula al guardar.</small>
+        <p *ngIf="manualError" class="text-danger small mb-0" role="alert">{{manualError}}</p>
+      </div>
     </section>
   `,
+  styles: [`
+  .table, td {
+    vertical-align: middle !important;
+  }
+  `]
 })
 export class BrickTimeComponent implements OnInit, OnDestroy {
   @Input() brick!: BasePostDTO;
   @Input() disabled = false;
   @Output() actionEvent = new EventEmitter<BrickTimeEvent>();
 
+  manualStart = '';
+  manualFinish = '';
+  manualError = '';
   now = Date.now();
 
   private ticker?: ReturnType<typeof setInterval>;
@@ -109,6 +153,18 @@ export class BrickTimeComponent implements OnInit, OnDestroy {
     if (this.ticker) clearInterval(this.ticker);
   }
 
+  addInterval(): void {
+    if (this.disabled) return;
+    this.manualError = '';
+    const startedAt = this.manualStart ? new Date(this.manualStart).getTime() : NaN;
+    const finishedAt = this.manualFinish ? new Date(this.manualFinish).getTime() : NaN;
+    if (!Number.isSafeInteger(startedAt) || !Number.isSafeInteger(finishedAt) || startedAt < 0 || finishedAt <= startedAt) {
+      this.manualError = 'Ingresa fechas válidas; el fin debe ser posterior al inicio.';
+      return;
+    }
+    this.actionEvent.emit({ brick: this.brick, action: 'add', interval: { startedAt, finishedAt } });
+  }
+
   emit(action: BrickTimeEvent['action'], measurementIndex?: number): void {
     if (this.disabled) {
       return;
@@ -123,7 +179,7 @@ export class BrickTimeComponent implements OnInit, OnDestroy {
     BrickTimeComponent
   ],
   imports: [
-    CommonModule
+    CommonModule, FormsModule
   ],
   exports: [
     BrickTimeComponent

@@ -76,6 +76,15 @@ describe('PostService update', () => {
     rest.post.and.resolveTo({ status: 400, payload: 'La duración debe ser positiva.' });
     await expectAsync(service.saveInsightBrick('Texto', 'insight')).toBeRejectedWithError('La duración debe ser positiva.');
   });
+  it('sends manual timestamps and returns the server record', async () => {
+    const payload = { uid: 'brick', attributes: { time: { totals: { label: '1h' } } } };
+    rest.post.and.resolveTo({ status: 200, payload });
+    const interval = { startedAt: 1000, finishedAt: 3601000 };
+    expect(await service.updateBrickTime('brick', 'insight', 'add', undefined, interval)).toEqual(payload as any);
+    expect(rest.post).toHaveBeenCalledOnceWith('v1/posts/insights/bricks/time', {
+      replyUid: 'brick', parentUid: 'insight', workspaceUid: 'workspace-1', action: 'add', ...interval,
+    });
+  });
   it('sends a report command for a specific measurement without changing the description', async () => {
     const payload = { uid: 'brick' }; rest.post.and.resolveTo({ status: 200, payload });
     expect(await service.updateBrickTime('brick', 'insight', 'report', 1)).toEqual(payload as any);

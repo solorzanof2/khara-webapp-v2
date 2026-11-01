@@ -35,6 +35,30 @@ describe('BrickTimeComponent', () => {
     component.measurements[0].reported = false;
     expect(component.hasUnreported).toBeTrue();
   });
+  it('converts local start/end dates to timestamps, including an overnight interval', () => {
+    component.manualStart = '2026-10-31T23:30:00';
+    component.manualFinish = '2026-11-01T01:00:00';
+    spyOn(component.actionEvent, 'emit');
+    component.addInterval();
+    expect(component.actionEvent.emit).toHaveBeenCalledOnceWith({ brick: component.brick, action: 'add', interval: {
+      startedAt: new Date(2026, 9, 31, 23, 30).getTime(), finishedAt: new Date(2026, 10, 1, 1).getTime(),
+    } });
+    expect(component.manualStart).toBe('2026-10-31T23:30:00');
+  });
+  for (const [start, finish] of [['', ''], ['invalid', '2026-11-01T10:00'],
+    ['2026-11-01T10:00', '2026-11-01T10:00'], ['2026-11-01T11:00', '2026-11-01T10:00']]) {
+    it('rejects invalid manual interval ' + start + ' / ' + finish, () => {
+      component.manualStart = start; component.manualFinish = finish;
+      spyOn(component.actionEvent, 'emit'); component.addInterval();
+      expect(component.actionEvent.emit).not.toHaveBeenCalled();
+      expect(component.manualError).toContain('fin debe ser posterior');
+    });
+  }
+  it('does not submit manual intervals while disabled', () => {
+    component.manualStart = '2026-11-01T09:00'; component.manualFinish = '2026-11-01T10:00';
+    component.disabled = true; spyOn(component.actionEvent, 'emit'); component.addInterval();
+    expect(component.actionEvent.emit).not.toHaveBeenCalled();
+  });
   it('clears its interval when destroyed', () => {
     jasmine.clock().install();
     try {

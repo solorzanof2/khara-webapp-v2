@@ -1,4 +1,4 @@
-import { BrickCategoryDTO, BrickInput } from '../models/interfaces/brick';
+import { BrickCategoryDTO, BrickInput, BrickTimeInterval } from '../models/interfaces/brick';
 import { Injectable } from '@angular/core';
 import { BaseService, QueryString } from './base.service';
 import { RestService } from './rest.service';
@@ -246,24 +246,15 @@ export class PostService extends BaseService {
   async fetchBrickCategories(insightUid: string): Promise<BrickCategoryDTO[]> {
     const query = this.buildQueryString({ ref: encodeURIComponent(insightUid), workspaceUid: encodeURIComponent(this.identityService.getWorkspace().uid) });
     const { status, payload } = await this.restService.get<ApiResponse<BrickCategoryDTO[]>>(`v1/posts/insights/bricks/categories?${query}`);
-    if (status < 200 || status >= 300 || !Array.isArray(payload)) throw new Error('No se pudieron cargar las categorías del proyecto.');
+    if (status < 200 || status >= 300 || !Array.isArray(payload)) throw new Error('No se pudo cargar el diccionario de categorías.');
     return payload;
   }
 
-  async createBrickCategory(insightUid: string, name: string): Promise<BrickCategoryDTO> {
-    const { status, payload } = await this.restService.post<ApiResponse<BrickCategoryDTO>>('v1/posts/insights/bricks/categories', {
-      ref: insightUid, workspaceUid: this.identityService.getWorkspace().uid, name,
-    });
-    if (status < 200 || status >= 300 || !payload?.id) {
-      throw new Error(typeof payload === 'string' ? payload : 'No se pudo crear la categoría.');
-    }
-    return payload;
-  }
-
-  async updateBrickTime(brickUid: string, insightUid: string, action: 'start' | 'finish' | 'report', measurementIndex?: number): Promise<BasePostDTO> {
+  async updateBrickTime(brickUid: string, insightUid: string, action: 'start' | 'finish' | 'report' | 'add', measurementIndex?: number, interval?: BrickTimeInterval): Promise<BasePostDTO> {
     const { status, payload } = await this.restService.post<ApiResponse<BasePostDTO>>('v1/posts/insights/bricks/time', {
       replyUid: brickUid, parentUid: insightUid, workspaceUid: this.identityService.getWorkspace().uid, action,
       ...(measurementIndex === undefined ? {} : { measurementIndex }),
+      ...(action === 'add' ? interval : {}),
     });
     if (status < 200 || status >= 300 || !payload?.uid) {
       throw new Error(typeof payload === 'string' ? payload : 'No se pudo actualizar el tiempo del brick.');

@@ -17,3 +17,5 @@ export interface BrickTime {
   totals: { label: string; millis: number; createdAt: number; updatedAt: number; reported: string };
 }
 export interface BrickAttributes { time?: BrickTime; [key: string]: unknown; }
+
+export interface BrickTimeInterval { startedAt: number; finishedAt: number; }
