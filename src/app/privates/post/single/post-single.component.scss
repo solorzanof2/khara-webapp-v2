@@ -28,8 +28,6 @@
 
   .main-content {
     min-width: 0;
-    border-left: var(--border-laterals);
-    border-right: var(--border-laterals);
     height: calc(100vh - 53px);
 
     .content-timeline {
@@ -40,5 +38,10 @@
         margin-top: 1rem;
       }
     }
+  }
+
+  .border-laterals {
+    border-left: var(--border-laterals);
+    border-right: var(--border-laterals);
   }
 }

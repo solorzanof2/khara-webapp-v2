@@ -3,6 +3,8 @@ import { Project } from './project.response';
 
 export interface BasePostDTO {
 
+  type?: 'comment' | 'insight';
+
   uid: string;
   rawContent: string;
   htmlContent: string;

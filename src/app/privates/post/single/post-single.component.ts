@@ -4,7 +4,7 @@ import { NotificationService } from '../../../commons/services/notification.serv
 import { BasePostDTO, FullPostDTO } from '../../../commons/models/interfaces/responses/post.response';
 import { PostService } from '../../../commons/services/post.service';
 import { TimelineComponent } from '../../../commons/components/timeline';
-import { PaginatedResponse } from '../../../commons/models/interfaces/responses/api.response';
+import { PostEditorComponent } from '../../../commons/components/post-editor';
 
 
 @Component({
@@ -14,28 +14,14 @@ import { PaginatedResponse } from '../../../commons/models/interfaces/responses/
   standalone: false,
 })
 export class PostSingleComponent implements OnInit {
-  private readonly DefaultPerPage: number = 10;
-
   @ViewChild(TimelineComponent) timeline!: TimelineComponent;
-
-  pagination: PaginatedResponse<BasePostDTO> = {
-    collection: new Array<BasePostDTO>(),
-    hasNext: false,
-    hasPrevious: false,
-    length: 0,
-    page: 0,
-    perPage: 0,
-    totalPages: 0,
-    totalRows: 0,
-  } as PaginatedResponse<BasePostDTO>;
+  @ViewChild(PostEditorComponent) editor!: PostEditorComponent;
+  publicationType: 'comment' | 'insight' = 'comment';
+  saving = false;
+  loading = true;
 
   reference: string = '';
   post: FullPostDTO = {} as FullPostDTO;
-
-  private currentPage: number = 0;
-
-  comments: BasePostDTO[] = new Array<BasePostDTO>();
-  insights: BasePostDTO[] = new Array<BasePostDTO>();
 
   get hasPosts(): boolean {
     return !!(this.post.comments?.length) || !!(this.post.insights?.length);
@@ -70,6 +56,7 @@ export class PostSingleComponent implements OnInit {
   // #region DATALOADERS
 
   async fetchData(): Promise<void> {
+    this.loading = true;
     try {
       const post = await this.postService.fetchPostByUid(this.reference);
       this.post = {
@@ -77,16 +64,13 @@ export class PostSingleComponent implements OnInit {
         comments: post.comments ?? [],
         insights: post.insights ?? [],
       };
-      const collection = [...this.post.comments, ...this.post.insights];
-      this.mapNewPosts(collection as BasePostDTO[]);
-      this.nextPage();
-      this.timeline.complete();
+      this.refreshTimeline();
     }
     catch (error: any) {
       this.notificationService.showError(error.message);
     }
     finally {
-      return Promise.resolve();
+      this.loading = false;
     }
   }
 
@@ -94,24 +78,49 @@ export class PostSingleComponent implements OnInit {
 
   // #region DATA MAPPERS
 
-  mapNewPosts(collection: BasePostDTO[]): void {
-    let post: BasePostDTO;
-    for (post of collection) {
-      this.posts.push(post);
-    }
-  }
-
-  nextPage(): void {
-    this.currentPage += 1;
-  }
-
-  resetPage(): void {
-    this.currentPage = 0;
+  private refreshTimeline(): void {
+    this.posts = [...this.post.comments, ...this.post.insights]
+      .sort((a, b) => b.created - a.created);
+    this.timeline?.complete();
   }
 
   // #endregion DATA MAPPERS
 
   // #region EVENTS
+
+  async saveEventHandler(value: string): Promise<void> {
+    if (this.saving || this.loading || !this.post.uid) {
+      return;
+    }
+    if (!value.trim()) {
+      this.notificationService.showWarning('No se puede enviar una publicación en blanco.');
+      return;
+    }
+
+    this.saving = true;
+    const type = this.publicationType;
+    try {
+      if (type === 'insight') {
+        const insight = await this.postService.saveInsight(value, this.reference);
+        this.post.insights = [insight, ...this.post.insights];
+        this.post.totalInsights = this.post.insights.length;
+      }
+      else {
+        const comment = await this.postService.saveComment(value, this.reference);
+        this.post.comments = [comment, ...this.post.comments];
+        this.post.totalComments = this.post.comments.length;
+      }
+      this.refreshTimeline();
+      this.editor.source = '';
+      this.notificationService.show(type === 'insight' ? 'Insight almacenado.' : 'Comentario almacenado.');
+    }
+    catch (error: any) {
+      this.notificationService.showError(error.message);
+    }
+    finally {
+      this.saving = false;
+    }
+  }
 
   editClickEventHandler(post: FullPostDTO): void {
     this.router.navigate(['webapp', 'posts', 'add'], {
@@ -122,27 +131,10 @@ export class PostSingleComponent implements OnInit {
   }
 
   timelineNextEventHandler(): void {
-    (async () => {
-      try {
-        if (!this.hasPosts) {
-          return;
-        }
-
-        if (this.currentPage > this.pagination.totalRows) {
-          this.timeline.complete();
-          return;
-        }
-
-        this.pagination = await this.postService.fetchAllPaginatedByUserUid(this.currentPage, this.DefaultPerPage);
-        this.nextPage();
-        this.mapNewPosts(this.pagination.collection);
-
-        return Promise.resolve();
-      }
-      catch (error: any) {
-        this.notificationService.showError(error.message);
-      }
-    })();
+    // The single-post endpoint already returns all comments and insights.
+    if (!this.loading) {
+      this.timeline?.complete();
+    }
   }
 
   selectedPostEventHandler(post: FullPostDTO): void {

@@ -154,6 +154,10 @@ export class PostService extends BaseService {
       Exception.isBadRequest(status, 'Uno o más datos enviados son inválidos.');
       Exception.isNotFoundStatus(status, 'El Workspace, El proyecto o La mención no existe, la misma está eliminada o no es accesible.');
 
+      if (status < 200 || status >= 300 || !payload?.uid) {
+        throw new Error('No se pudo guardar la publicación.');
+      }
+
       return this.ok(payload);
     }
     catch (error: any) {
@@ -180,6 +184,10 @@ export class PostService extends BaseService {
       Exception.isDefaultErrorStatus(status);
       Exception.isBadRequest(status, 'Uno o más datos enviados son inválidos.');
       Exception.isNotFoundStatus(status, 'El Workspace, El proyecto o La mención no existe, la misma está eliminada o no es accesible.');
+
+      if (status < 200 || status >= 300 || !payload?.uid) {
+        throw new Error('No se pudo guardar la publicación.');
+      }
 
       return this.ok(payload as InsightPostDTO);
     }
