@@ -62,10 +62,14 @@ import { SanitizeHTMLModule } from '../../pipes/sanitize-html';
                   *ngIf="!(!!post.type) || post.type === 'insight'"
                 >
                   <td align="end">
-                    <button
-                      class="btn btn-sm btn-outline-primary btn-compact button-more"
-                      (click)="selectClickEventHandler(post)"
-                    >Ver más</button>
+                    <div class="action-button">
+                      <button
+                        class="btn-xs"
+                        (click)="selectClickEventHandler(post)"
+                      >
+                        <small>Ver más</small>
+                      </button>
+                    </div>
                   </td>
                 </ng-container>
               </tr>
@@ -129,8 +133,9 @@ import { SanitizeHTMLModule } from '../../pipes/sanitize-html';
         background-color: #fff !important;
         border-top: #fff !important;
 
-        .button-more {
-          font-size: 50%;
+        .action-button {
+          display: flex;
+          justify-content: end;
         }
       }
     }

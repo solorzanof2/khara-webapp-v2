@@ -20,14 +20,16 @@ export interface BrickTimeEvent { brick: BasePostDTO; action: 'start' | 'finish'
             [disabled]="disabled"
             (click)="emit(active ? 'finish' : 'start')"
           >
-            {{active ? 'Finalizar' : 'Iniciar'}}
+            <small *ngIf="!active"><i class="zmdi zmdi-play-circle"></i> &nbsp; Iniciar</small>
+            <small *ngIf="active"><i class="zmdi zmdi-stop"></i> &nbsp; Finalizar</small>
+            <!-- <small>{{active ? 'Finalizar' : 'Iniciar'}}</small> -->
           </button>
           <button
             class="btn-xs"
             [disabled]="disabled || !hasUnreported"
             (click)="emit('report')"
           >
-            Marcar todo Reportado
+            <small><i class="zmdi zmdi-check-all"></i> &nbsp; Marcar todo Reportado</small>
           </button>
         </div>
       </div>
@@ -62,7 +64,9 @@ export interface BrickTimeEvent { brick: BasePostDTO; action: 'start' | 'finish'
                     class="btn-xs"
                     [disabled]="disabled"
                     (click)="emit('report', index)"
-                  >Reportado</button>
+                  >
+                    <small>Reportado</small>
+                  </button>
                   <span *ngIf="measurement.finishedAt === null">En curso</span>
                 </td>
               </tr>

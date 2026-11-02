@@ -1,4 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
+import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NotificationService } from '../../../commons/services/notification.service';
 import { BasePostDTO, FullPostDTO } from '../../../commons/models/interfaces/responses/post.response';
@@ -34,6 +35,7 @@ export class PostSingleComponent implements OnInit {
   posts: BasePostDTO[] = new Array<BasePostDTO>();
 
   constructor(
+    private location: Location,
     private router: Router,
     private notificationService: NotificationService,
     private activatedRoute: ActivatedRoute,
@@ -91,6 +93,10 @@ export class PostSingleComponent implements OnInit {
   // #endregion DATA MAPPERS
 
   // #region EVENTS
+
+  backEventHandler(): void {
+    this.location.back();
+  }
 
   async saveEventHandler(value: string): Promise<void> {
     if (this.saving || this.loading || !this.post.uid) {

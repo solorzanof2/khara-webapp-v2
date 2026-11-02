@@ -2,6 +2,7 @@ import { BrickTimeEvent } from '../../../commons/components/brick-time/brick-tim
 import { BrickFieldsComponent } from '../../../commons/components/brick-fields/brick-fields';
 import { BrickInput } from '../../../commons/models/interfaces/brick';
 import { Component, OnInit, ViewChild } from '@angular/core';
+import { Location } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { NotificationService } from '../../../commons/services/notification.service';
 import { BasePostDTO, FullInsightDTO } from '../../../commons/models/interfaces/responses/post.response';
@@ -40,6 +41,7 @@ export class PostInsightComponent implements OnInit {
   replies: BasePostDTO[] = new Array<BasePostDTO>();
 
   constructor(
+    private location: Location,
     private notificationService: NotificationService,
     private activatedRoute: ActivatedRoute,
     private postService: PostService,
@@ -96,6 +98,10 @@ export class PostInsightComponent implements OnInit {
   // #endregion DATA MAPPERS
 
   // #region EVENTS
+
+  backEventHandler(): void {
+    this.location.back();
+  }
 
   async saveEventHandler(value: string): Promise<void> {
     if (this.saving || this.loading || !this.insight.uid) {

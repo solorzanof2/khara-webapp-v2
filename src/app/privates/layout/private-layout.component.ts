@@ -19,6 +19,34 @@ import { Component } from '@angular/core';
   `,
   styles: [
     `
+    :host {
+      display: block;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    #wrapper, #content-wrapper {
+      height: 100%;
+      min-height: 0;
+    }
+
+    #content-wrapper {
+      display: flex;
+      flex-direction: column;
+    }
+
+    app-private-header {
+      flex: 0 0 auto;
+      position: relative;
+      z-index: 20;
+    }
+
+    #content {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+    }
     `,
   ],
   standalone: false,

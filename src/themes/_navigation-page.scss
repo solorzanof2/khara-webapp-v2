@@ -1,0 +1,60 @@
+@mixin layout {
+  :host {
+    display: block;
+    height: 100%;
+    min-height: 0;
+  }
+
+  section {
+    height: 100%;
+    overflow: hidden;
+
+    > .container,
+    > .container > .row {
+      height: 100%;
+      min-height: 0;
+    }
+
+    > .container > .row {
+      flex-direction: column;
+      flex-wrap: nowrap;
+    }
+  }
+
+  .page-main-column {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .secondary-content {
+    flex: 0 0 auto;
+  }
+
+  .primary-content {
+    height: 100%;
+    min-width: 0;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scrollbar-gutter: stable;
+  }
+
+  .page-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    padding: 1rem;
+    background-color: var(--bs-body-bg, #fff);
+    border-bottom: 1px solid #ddd;
+  }
+
+  @media (min-width: 768px) {
+    section > .container > .row {
+      flex-direction: row;
+    }
+
+    .page-main-column {
+      flex: 0 0 auto;
+      height: 100%;
+    }
+  }
+}

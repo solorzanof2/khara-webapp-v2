@@ -1,3 +1,7 @@
+@use '../../../themes/navigation-page';
+
+@include navigation-page.layout;
+
 :host {
   --border-laterals: 1px solid #ddd;
 }
@@ -8,7 +12,14 @@
     min-width: 0;
     border-left: var(--border-laterals);
     border-right: var(--border-laterals);
-    height: calc(100vh - 53px);
+
+    &.primary-content::-webkit-scrollbar {
+      display: none;
+    }
+
+    &.primary-content {
+      scrollbar-width: none;
+    }
 
     .content-timeline {
       min-width: 0;

@@ -1,8 +1,23 @@
+@use '../../../../themes/navigation-page';
+
+@include navigation-page.layout;
+
 :host {
   --border-laterals: 1px solid #ddd;
 }
 
 #app-post-insight {
+  #post-insight-header {
+    padding: 1rem;
+  }
+
+  .primary-content::-webkit-scrollbar {
+    display: none;
+  }
+
+  .primary-content {
+    scrollbar-width: none;
+  }
 
   .post-card {
     border-radius: 0 !important;
@@ -28,7 +43,6 @@
 
   .main-content {
     min-width: 0;
-    height: calc(100vh - 53px);
 
     .content-timeline {
       min-width: 0;
