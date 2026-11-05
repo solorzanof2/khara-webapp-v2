@@ -9,13 +9,21 @@ export interface BrickTimeEvent { brick: BasePostDTO; action: 'start' | 'finish'
   selector: 'app-brick-time', standalone: false,
   template: `
     <section class="border p-2 mt-2" aria-label="Control de tiempo del brick">
-      <div class="d-flex flex-wrap justify-content-between gap-2 align-items-center">
-        <small>
+      <div class="time-header d-flex flex-wrap justify-content-between gap-2 align-items-center" (click)="collapsed = !collapsed">
+        <button
+          type="button"
+          class="time-summary"
+          [attr.aria-expanded]="!collapsed"
+          [attr.aria-controls]="'brick-time-details-' + brick.uid"
+        >
+          <small><i class="zmdi" [class.zmdi-chevron-right]="collapsed" [class.zmdi-chevron-down]="!collapsed" aria-hidden="true"></i> &nbsp;
           <strong>{{brick.category || 'Sin categoría'}}</strong> · Total: {{brick.attributes?.time?.totals?.label || '0s'}}
           · Reportado: {{brick.attributes?.time?.totals?.reported || '0s'}}
-        </small>
-        <div class="d-flex gap-2">
+          </small>
+        </button>
+        <div class="d-flex gap-2" (click)="$event.stopPropagation()">
           <button
+            type="button"
             class="btn-xs"
             [disabled]="disabled"
             (click)="emit(active ? 'finish' : 'start')"
@@ -25,6 +33,7 @@ export interface BrickTimeEvent { brick: BasePostDTO; action: 'start' | 'finish'
             <!-- <small>{{active ? 'Finalizar' : 'Iniciar'}}</small> -->
           </button>
           <button
+            type="button"
             class="btn-xs"
             [disabled]="disabled || !hasUnreported"
             (click)="emit('report')"
@@ -33,12 +42,12 @@ export interface BrickTimeEvent { brick: BasePostDTO; action: 'start' | 'finish'
           </button>
         </div>
       </div>
-      <small
-        *ngIf="active"
-        class="text-success d-block mt-1"
-        role="status"
-      >En curso: {{elapsedLabel}}</small>
-      <div class="mt-2">
+      <div class="mt-2" [hidden]="collapsed" [id]="'brick-time-details-' + brick.uid">
+        <small
+          *ngIf="active"
+          class="text-success d-block mt-1"
+          role="status"
+        >En curso: {{elapsedLabel}}</small>
         <div class="table-responsive">
           <table class="table table-sm small mb-0">
             <thead>
@@ -115,6 +124,24 @@ export interface BrickTimeEvent { brick: BasePostDTO; action: 'start' | 'finish'
     </section>
   `,
   styles: [`
+  [hidden] {
+    transition: all .5s;
+  }
+
+  .time-header {
+    cursor: pointer;
+  }
+
+  .time-summary {
+    flex: 1;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
   .table, td {
     vertical-align: middle !important;
   }
@@ -124,6 +151,8 @@ export class BrickTimeComponent implements OnInit, OnDestroy {
   @Input() brick!: BasePostDTO;
   @Input() disabled = false;
   @Output() actionEvent = new EventEmitter<BrickTimeEvent>();
+
+  collapsed = true;
 
   manualStart = '';
   manualFinish = '';

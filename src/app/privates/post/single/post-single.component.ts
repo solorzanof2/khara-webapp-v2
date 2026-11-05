@@ -1,15 +1,13 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { NotificationService } from '../../../commons/services/notification.service';
 import { BasePostDTO, FullPostDTO } from '../../../commons/models/interfaces/responses/post.response';
 import { PostService } from '../../../commons/services/post.service';
 import { TimelineComponent } from '../../../commons/components/timeline';
 import { PostEditModalComponent } from '../../../commons/components/post-edit-modal';
 import { PostEditorComponent } from '../../../commons/components/post-editor';
-import { PostTypeEvent } from './post-type';
-
-type PostType = 'comment' | 'insight';
 
 @Component({
   selector: 'app-post-single',
@@ -17,22 +15,20 @@ type PostType = 'comment' | 'insight';
   styleUrls: ['./post-single.component.scss'],
   standalone: false,
 })
-export class PostSingleComponent implements OnInit {
+export class PostSingleComponent implements OnInit, OnDestroy {
   @ViewChild(TimelineComponent) timeline!: TimelineComponent;
   @ViewChild(PostEditorComponent) editor!: PostEditorComponent;
   @ViewChild(PostEditModalComponent) postEditModal!: PostEditModalComponent;
-  publicationType: PostType = 'comment';
   saving = false;
   loading = true;
+  reference = '';
+  post: FullPostDTO = { childs: [] } as unknown as FullPostDTO;
+  posts: BasePostDTO[] = [];
+  private routeSubscription?: Subscription;
+  private loadVersion = 0;
+  private destroyed = false;
 
-  reference: string = '';
-  post: FullPostDTO = {} as FullPostDTO;
-
-  get hasPosts(): boolean {
-    return !!(this.post.comments?.length) || !!(this.post.insights?.length);
-  }
-
-  posts: BasePostDTO[] = new Array<BasePostDTO>();
+  get hasPosts(): boolean { return !!this.posts.length; }
 
   constructor(
     private location: Location,
@@ -40,89 +36,58 @@ export class PostSingleComponent implements OnInit {
     private notificationService: NotificationService,
     private activatedRoute: ActivatedRoute,
     private postService: PostService,
-  ) {
-    this.activatedRoute.params.subscribe(params => {
+  ) {}
+
+  ngOnInit(): void {
+    this.routeSubscription = this.activatedRoute.params.subscribe(params => {
       const reference = params['ref'];
-
-      if (!reference) {
-        history.back();
-        return;
-      }
-
+      if (!reference) { this.location.back(); return; }
       this.reference = reference;
+      this.post = { childs: [] } as unknown as FullPostDTO;
+      this.posts = [];
+      if (this.editor) this.editor.source = '';
+      void this.fetchData();
     });
   }
 
-  ngOnInit(): void {
-    (async () => {
-      await this.fetchData();
-    })();
-  }
-
-  // #region DATALOADERS
-
   async fetchData(): Promise<void> {
+    const version = ++this.loadVersion;
     this.loading = true;
     try {
       const post = await this.postService.fetchPostByUid(this.reference);
-      this.post = {
-        ...post,
-        comments: post.comments ?? [],
-        insights: post.insights ?? [],
-      };
-      this.refreshTimeline();
+      if (version !== this.loadVersion) return;
+      this.post = { ...post, childs: post.childs ?? [] };
+      this.posts = [...this.post.childs].sort((a, b) => b.created - a.created);
+      setTimeout(() => this.timeline?.complete(), 300);
+      // this.timeline?.complete();
     }
     catch (error: any) {
-      this.notificationService.showError(error.message);
+      if (version === this.loadVersion) this.notificationService.showError(error.message);
     }
     finally {
-      this.loading = false;
+      if (version === this.loadVersion) this.loading = false;
     }
   }
 
-  // #endregion DATALOADERS
-
-  // #region DATA MAPPERS
-
-  private refreshTimeline(): void {
-    this.posts = [...this.post.comments, ...this.post.insights]
-      .sort((a, b) => b.created - a.created);
-    this.timeline?.complete();
-  }
-
-  // #endregion DATA MAPPERS
-
-  // #region EVENTS
-
-  backEventHandler(): void {
-    this.location.back();
-  }
+  backEventHandler(): void { this.location.back(); }
 
   async saveEventHandler(value: string): Promise<void> {
-    if (this.saving || this.loading || !this.post.uid) {
-      return;
-    }
+    if (this.saving || this.loading || !this.post.uid) return;
     if (!value.trim()) {
       this.notificationService.showWarning('No se puede enviar una publicación en blanco.');
       return;
     }
-
+    const parentUid = this.post.uid;
+    const projectUid = this.post.project?.uid;
     this.saving = true;
-    const type = this.publicationType;
     try {
-      if (type === 'insight') {
-        const insight = await this.postService.saveInsight(value, this.reference);
-        this.post.insights = [insight, ...this.post.insights];
-        this.post.totalInsights = this.post.insights.length;
-      }
-      else {
-        const comment = await this.postService.saveComment(value, this.reference);
-        this.post.comments = [comment, ...this.post.comments];
-        this.post.totalComments = this.post.comments.length;
-      }
-      this.refreshTimeline();
+      await this.postService.save(value, projectUid, parentUid);
+      if (this.destroyed || this.reference !== parentUid) return;
+      // Creation returns the persisted model; reload to get the public DTO and authors.
+      await this.fetchData();
+      if (this.reference !== parentUid) return;
       this.editor.source = '';
-      this.notificationService.show(type === 'insight' ? 'Insight almacenado.' : 'Comentario almacenado.');
+      this.notificationService.show('Publicación almacenada.');
     }
     catch (error: any) {
       this.notificationService.showError(error.message);
@@ -138,39 +103,26 @@ export class PostSingleComponent implements OnInit {
   }
 
   timelineNextEventHandler(): void {
-    // The single-post endpoint already returns all comments and insights.
-    if (!this.loading) {
-      this.timeline?.complete();
-    }
+    if (!this.loading) this.timeline?.complete();
   }
 
-  selectedPostEventHandler(post: FullPostDTO): void {
-    this.router.navigate([
-      'webapp', 'insights', post.uid,
-    ]);
+  selectedPostEventHandler(post: BasePostDTO): void {
+    this.router.navigate(['webapp', 'posts', post.uid]);
   }
 
   editPostEventHandler(reply: BasePostDTO): void {
-    if (this.loading || this.saving || !this.post.uid) return;
-    // Membership in the parent collections determines the endpoint, not optional DTO metadata.
-    const type = this.post.insights.some(insight => insight.uid === reply.uid)
-      ? 'insight'
-      : this.post.comments.some(comment => comment.uid === reply.uid)
-        ? 'comment'
-        : undefined;
-    if (!type) return;
-    this.postEditModal.open(reply, { type, parentUid: this.post.uid });
+    if (this.loading || this.saving || !this.post.project?.uid) return;
+    if (!this.post.childs.some(child => child.uid === reply.uid)) return;
+    this.postEditModal.open(reply, {
+      type: 'post', projectUid: this.post.project.uid, parentUid: this.post.uid,
+    });
   }
 
-  async updatedPostEventHandler(): Promise<void> {
-    await this.fetchData();
+  async updatedPostEventHandler(): Promise<void> { await this.fetchData(); }
+
+  ngOnDestroy(): void {
+    this.destroyed = true;
+    this.routeSubscription?.unsubscribe();
+    ++this.loadVersion;
   }
-
-  selectionPostTypeEventHandler(postTypeEvent: PostTypeEvent): void {
-    this.publicationType = postTypeEvent.value as PostType;
-  }
-
-  // #endregion EVENTS
-
 }
-

@@ -13,8 +13,8 @@
               <small>Volver</small>
             </button>
           </div>
-          <div class="card post-card">
-            <div class="card-header d-flex justify-content-between align-items-start gap-2">
+          <div class="card card-white">
+            <div class="card-header d-flex justify-content-between gap-2">
               <small>
                 <strong>{{post.displayName}}</strong> &hyphen;
                 <a href="javascript:void(0)">&#64;{{post.mention}}</a> &hyphen;
@@ -22,9 +22,10 @@
               </small>
               <a
                 href="javascript:void(0)"
+                class="btn-xs-square"
                 title="Editar publicación"
                 (click)="editClickEventHandler(post)"
-              ><i class="zmdi zmdi-edit"></i><small> Editar</small></a>
+              ><i class="zmdi zmdi-edit"></i></a>
             </div>
             <div
               class="card-body"
@@ -33,22 +34,17 @@
             <div class="card-footer">
               <table class="w-100">
                 <tr>
-                  <td class="col-2"><small>{{post.totalInsights}} Insights</small></td>
-                  <td class="col-3"><small>{{post.totalComments}} Comentarios</small></td>
+                  <td><small>{{post.totalChilds || 0}} Respuestas</small></td>
                 </tr>
               </table>
             </div>
           </div>
           <div class="main-content">
             <div class="content-timeline">
-              <app-post-type-selector
-                [disabled]="saving || loading || !post.uid"
-                (selectionEvent)="selectionPostTypeEventHandler($event)"
-              ></app-post-type-selector>
               <app-post-editor
                 headerText=""
                 [saving]="saving || loading || !post.uid"
-                [submitText]="saving ? 'Publicando…' : publicationType === 'insight' ? 'Publicar insight' : 'Publicar comentario'"
+                [submitText]="saving ? 'Publicando…' : 'Publicar'"
                 (saveEvent)="saveEventHandler($event)"
               ></app-post-editor>
               <div class="custom-separator"></div>

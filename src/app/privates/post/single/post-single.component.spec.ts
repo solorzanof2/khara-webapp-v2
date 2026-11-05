@@ -1,181 +1,130 @@
+import { fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
+import { Location } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { TimelineComponent } from '../../../commons/components/timeline';
 import { PostEditModalComponent } from '../../../commons/components/post-edit-modal';
 import { PostEditorComponent } from '../../../commons/components/post-editor';
-import { BasePostDTO, FullPostDTO, InsightPostDTO } from '../../../commons/models/interfaces/responses/post.response';
+import { BasePostDTO, FullPostDTO } from '../../../commons/models/interfaces/responses/post.response';
 import { NotificationService } from '../../../commons/services/notification.service';
 import { PostService } from '../../../commons/services/post.service';
 import { PostSingleComponent } from './post-single.component';
 
-describe('PostSingleComponent', () => {
+describe('PostSingleComponent: Posts hijos', () => {
   let component: PostSingleComponent;
-  let postService: jasmine.SpyObj<PostService>;
+  let service: jasmine.SpyObj<PostService>;
   let notifications: jasmine.SpyObj<NotificationService>;
-
+  let router: jasmine.SpyObj<Router>;
+  const child = { uid: 'child', created: 20, type: 'post' } as BasePostDTO;
+  const full = (childs: BasePostDTO[] = []): FullPostDTO => ({ uid: 'parent', project: { uid: 'project' }, childs, totalChilds: childs?.length ?? 0 } as FullPostDTO);
   beforeEach(() => {
-    postService = jasmine.createSpyObj<PostService>('PostService', [
-      'fetchPostByUid', 'fetchAllPaginatedByUserUid', 'saveComment', 'saveInsight',
-    ]);
-    notifications = jasmine.createSpyObj<NotificationService>('NotificationService', ['showError', 'showWarning', 'show']);
-    component = new PostSingleComponent(
-      jasmine.createSpyObj<Router>('Router', ['navigate']),
-      notifications,
-      { params: of({ ref: 'post-uid' }) } as unknown as ActivatedRoute,
-      postService,
-    );
-    component.timeline = jasmine.createSpyObj<TimelineComponent>('TimelineComponent', ['complete']);
+    service = jasmine.createSpyObj('PostService', ['fetchPostByUid', 'save']);
+    service.save.and.resolveTo();
+    service.fetchPostByUid.and.resolveTo(full());
+    notifications = jasmine.createSpyObj('NotificationService', ['showError', 'showWarning', 'show']);
+    router = jasmine.createSpyObj('Router', ['navigate']);
+    component = new PostSingleComponent(jasmine.createSpyObj<Location>('Location', ['back']), router, notifications, { params: of({ ref: 'parent' }) } as unknown as ActivatedRoute, service);
+    component.reference = 'parent';
+    component.post = full();
+    component.loading = false;
+    component.timeline = jasmine.createSpyObj<TimelineComponent>('Timeline', ['complete']);
     component.editor = { source: 'Borrador' } as PostEditorComponent;
+    component.postEditModal = jasmine.createSpyObj<PostEditModalComponent>('Modal', ['open']);
   });
+  afterEach(() => component.ngOnDestroy());
 
-  it('edita el post principal mediante la API original del modal', () => {
-    component.loading = false;
-    const open = jasmine.createSpy('open');
-    component.postEditModal = { open } as unknown as PostEditModalComponent;
-    component.post = { uid: 'post-uid', project: { uid: 'project-uid' } } as FullPostDTO;
-    component.editClickEventHandler(component.post);
-    expect(open).toHaveBeenCalledOnceWith(component.post);
-  });
-
-  for (const type of ['comment', 'insight'] as const) {
-    it(`identifica ${type} por la colección y proporciona el padre sin requerir project`, () => {
-      component.loading = false;
-      const open = jasmine.createSpy('open');
-      component.postEditModal = { open } as unknown as PostEditModalComponent;
-      const reply = { uid: 'reply-uid', rawContent: 'Original' } as InsightPostDTO;
-      component.post = { uid: 'post-uid', comments: type === 'comment' ? [reply] : [], insights: type === 'insight' ? [reply] : [] } as unknown as FullPostDTO;
-      component.editPostEventHandler(reply);
-      expect(open).toHaveBeenCalledOnceWith(reply, { type, parentUid: 'post-uid' });
-    });
-  }
-
-  it('refresca el post y sus respuestas sin borrar el borrador del editor de creación', async () => {
-    const comment = { uid: 'comment', rawContent: 'Editado', created: 100 } as BasePostDTO;
-    const insight = { uid: 'insight', rawContent: 'Original', created: 50 } as InsightPostDTO;
-    postService.fetchPostByUid.and.resolveTo({ uid: 'post-uid', htmlContent: 'Actualizado', totalComments: 1, totalInsights: 1, comments: [comment], insights: [insight] } as FullPostDTO);
-    await component.updatedPostEventHandler();
-    expect(postService.fetchPostByUid).toHaveBeenCalledOnceWith('post-uid');
-    expect(component.post.htmlContent).toBe('Actualizado');
-    expect(component.posts).toEqual([comment, insight]);
-    expect(component.post.totalComments).toBe(1);
-    expect(component.post.totalInsights).toBe(1);
-    expect(component.editor.source).toBe('Borrador');
-  });
-
-  it('no abre el modal para respuestas ajenas ni mientras se guarda o carga', () => {
-    const open = jasmine.createSpy('open');
-    component.postEditModal = { open } as unknown as PostEditModalComponent;
-    component.post = { uid: 'post-uid', comments: [], insights: [] } as unknown as FullPostDTO;
-    component.editClickEventHandler(component.post);
-    component.loading = false;
-    component.saving = true;
-    component.editClickEventHandler(component.post);
-    component.saving = false;
-    component.editPostEventHandler({ uid: 'unknown' } as BasePostDTO);
-    expect(open).not.toHaveBeenCalled();
-  });
-
-  it('ignores timeline load events while the post is still loading', async () => {
-    let resolvePost!: (post: FullPostDTO) => void;
-    postService.fetchPostByUid.and.returnValue(new Promise(resolve => { resolvePost = resolve; }));
-
-    const loading = component.fetchData();
-    expect(component.hasPosts).toBeFalse();
-    component.timelineNextEventHandler();
-    expect(notifications.showError).not.toHaveBeenCalled();
-    expect(postService.fetchAllPaginatedByUserUid).not.toHaveBeenCalled();
-
-    resolvePost({ comments: [], insights: [] } as unknown as FullPostDTO);
-    await loading;
-    expect(component.timeline.complete).toHaveBeenCalled();
-  });
-
-  for (const missingValue of [undefined, null]) {
-    it(`renders an empty timeline when the response collections are ${missingValue}`, async () => {
-      postService.fetchPostByUid.and.resolveTo({
-        uid: 'post-uid', comments: missingValue, insights: missingValue,
-      } as unknown as FullPostDTO);
-
-      await component.fetchData();
-
-      expect(component.post.uid).toBe('post-uid');
-      expect(component.post.comments).toEqual([]);
-      expect(component.post.insights).toEqual([]);
-      expect(component.hasPosts).toBeFalse();
-      expect(component.posts).toEqual([]);
-      expect(component.timeline.complete).toHaveBeenCalled();
-      expect(notifications.showError).not.toHaveBeenCalled();
-    });
-  }
-
-  it('preserves comments and insights in the mapped timeline', async () => {
-    const comment = { uid: 'comment-uid' } as BasePostDTO;
-    const insight = { uid: 'insight-uid' } as InsightPostDTO;
-    postService.fetchPostByUid.and.resolveTo({
-      comments: [comment], insights: [insight],
-    } as FullPostDTO);
-
-    await component.fetchData();
-
+  it('usa childs y los ordena por fecha sin modificar la colección recibida', fakeAsync(() => {
+    const older = { uid: 'older', created: 10 } as BasePostDTO;
+    const response = full([older, child]);
+    service.fetchPostByUid.and.resolveTo(response);
+    void component.fetchData();
+    flushMicrotasks();
+    tick(300);
+    expect(component.posts).toEqual([child, older]);
+    expect(response.childs).toEqual([older, child]);
     expect(component.hasPosts).toBeTrue();
-    expect(component.posts).toEqual([comment, insight]);
     expect(component.timeline.complete).toHaveBeenCalled();
-    expect(notifications.showError).not.toHaveBeenCalled();
-  });
-
-  it('replaces the timeline on repeated loads without requesting unrelated user posts', async () => {
-    postService.fetchPostByUid.and.resolveTo({ comments: [{ uid: 'one' }], insights: [] } as unknown as FullPostDTO);
-    await component.fetchData();
-    await component.fetchData();
-    component.timelineNextEventHandler();
-    expect(component.posts.length).toBe(1);
-    expect(postService.fetchAllPaginatedByUserUid).not.toHaveBeenCalled();
-  });
-
-  for (const type of ['comment', 'insight'] as const) {
-    it(`saves a ${type}, updates the timeline and counter, and clears the editor`, async () => {
-      component.loading = false;
-      component.post = { uid: 'post-uid', comments: [], insights: [], totalComments: 0, totalInsights: 0 } as unknown as FullPostDTO;
-      component.publicationType = type;
-      const created = { uid: 'new', created: 123, type } as InsightPostDTO;
-      postService.saveComment.and.resolveTo(created);
-      postService.saveInsight.and.resolveTo(created);
-
-      await component.saveEventHandler('Hola');
-
-      expect(type === 'comment' ? postService.saveComment : postService.saveInsight).toHaveBeenCalledOnceWith('Hola', 'post-uid');
-      expect(type === 'comment' ? postService.saveInsight : postService.saveComment).not.toHaveBeenCalled();
-      expect(component.posts).toEqual([created]);
-      expect(type === 'comment' ? component.post.totalComments : component.post.totalInsights).toBe(1);
-      expect(component.editor.source).toBe('');
-      expect(component.saving).toBeFalse();
+  }));
+  for (const missing of [undefined, null]) {
+    it('normaliza una colección de hijos vacía: ' + missing, async () => {
+      service.fetchPostByUid.and.resolveTo(full(missing as any));
+      await component.fetchData();
+      expect(component.post.childs).toEqual([]);
+      expect(component.posts).toEqual([]);
     });
   }
-
-  it('preserves the draft and timeline when saving fails', async () => {
-    component.loading = false;
-    component.post = { uid: 'post-uid', comments: [], insights: [] } as unknown as FullPostDTO;
-    postService.saveComment.and.rejectWith(new Error('Falló el guardado'));
-    await component.saveEventHandler('Borrador');
-    expect(component.editor.source).toBe('Borrador');
-    expect(component.posts).toEqual([]);
+  it('crea un Post enviando el UID padre y recarga el DTO del servidor', async () => {
+    service.fetchPostByUid.and.resolveTo(full([child]));
+    await component.saveEventHandler('Respuesta');
+    expect(service.save).toHaveBeenCalledOnceWith('Respuesta', 'project', 'parent');
+    expect(service.fetchPostByUid).toHaveBeenCalledOnceWith('parent');
+    expect(component.posts).toEqual([child]);
+    expect(component.post.totalChilds).toBe(1);
+    expect(component.editor.source).toBe('');
+    expect(notifications.show).toHaveBeenCalledWith('Publicación almacenada.');
     expect(component.saving).toBeFalse();
-    expect(notifications.showError).toHaveBeenCalledWith('Falló el guardado');
   });
-
-  it('rejects blank content and ignores duplicate submissions while saving', async () => {
-    component.loading = false;
-    component.post = { uid: 'post-uid', comments: [], insights: [] } as unknown as FullPostDTO;
+  it('conserva el borrador cuando falla la creación', async () => {
+    service.save.and.rejectWith(new Error('Sin conexión'));
+    await component.saveEventHandler('Respuesta');
+    expect(component.editor.source).toBe('Borrador');
+    expect(service.fetchPostByUid).not.toHaveBeenCalled();
+    expect(notifications.showError).toHaveBeenCalledWith('Sin conexión');
+    expect(component.saving).toBeFalse();
+  });
+  it('rechaza blanco y bloquea envíos duplicados', async () => {
     await component.saveEventHandler('   ');
-    expect(notifications.showWarning).toHaveBeenCalled();
-    expect(postService.saveComment).not.toHaveBeenCalled();
-
-    let resolveSave!: (post: BasePostDTO) => void;
-    postService.saveComment.and.returnValue(new Promise(resolve => { resolveSave = resolve; }));
-    const saving = component.saveEventHandler('Borrador');
-    await component.saveEventHandler('Borrador');
-    expect(postService.saveComment).toHaveBeenCalledTimes(1);
-    resolveSave({ uid: 'new' } as BasePostDTO);
-    await saving;
+    expect(service.save).not.toHaveBeenCalled();
+    let finish!: () => void;
+    service.save.and.returnValue(new Promise<void>(resolve => { finish = resolve; }));
+    const pending = component.saveEventHandler('Texto');
+    await component.saveEventHandler('Duplicado');
+    expect(service.save).toHaveBeenCalledTimes(1);
+    finish();
+    await pending;
+  });
+  it('abre todos los hijos en el detalle de Posts', () => {
+    component.selectedPostEventHandler(child);
+    expect(router.navigate).toHaveBeenCalledOnceWith(['webapp', 'posts', 'child']);
+  });
+  it('edita un hijo con contexto genérico de proyecto y padre', () => {
+    component.post = full([child]);
+    component.editPostEventHandler(child);
+    expect(component.postEditModal.open).toHaveBeenCalledOnceWith(child, { type: 'post', projectUid: 'project', parentUid: 'parent' });
+  });
+  it('no edita publicaciones ajenas a los hijos del detalle', () => {
+    component.editPostEventHandler(child);
+    expect(component.postEditModal.open).not.toHaveBeenCalled();
+  });
+  it('edita el Post principal con el mismo modal', () => {
+    component.editClickEventHandler(component.post);
+    expect(component.postEditModal.open as jasmine.Spy).toHaveBeenCalledOnceWith(component.post);
+  });
+  it('recargar tras editar conserva el borrador de una respuesta', async () => {
+    await component.updatedPostEventHandler();
+    expect(component.editor.source).toBe('Borrador');
+  });
+  it('recarga al navegar de padre a hijo usando la misma instancia', async () => {
+    const params = new Subject<{ ref: string }>();
+    component.ngOnDestroy();
+    component = new PostSingleComponent({ back() {} } as Location, router, notifications, { params } as unknown as ActivatedRoute, service);
+    component.ngOnInit();
+    params.next({ ref: 'parent' });
+    await Promise.resolve();
+    params.next({ ref: 'child' });
+    await Promise.resolve();
+    expect(service.fetchPostByUid.calls.allArgs()).toEqual([['parent'], ['child']]);
+    expect(component.reference).toBe('child');
+  });
+  it('descarta respuestas tardías de una publicación anterior', async () => {
+    let finish!: (post: FullPostDTO) => void;
+    service.fetchPostByUid.and.returnValue(new Promise(resolve => { finish = resolve; }));
+    const first = component.fetchData();
+    component.reference = 'child';
+    service.fetchPostByUid.and.resolveTo({ ...full(), uid: 'child' });
+    await component.fetchData();
+    finish(full());
+    await first;
+    expect(component.post.uid).toBe('child');
   });
 });

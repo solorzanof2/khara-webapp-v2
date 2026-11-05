@@ -11,70 +11,37 @@ describe('PostService update', () => {
     identity.getWorkspace.and.returnValue({ uid: 'workspace-1' });
     service = new PostService(rest, identity);
   });
-  for (const type of ['insight', 'comment'] as const) {
-    it(`envía el contrato de actualización de ${type} sin exigir project`, async () => {
-      rest.post.and.resolveTo({ status: 200 });
-      await (type === 'insight' ? service.updateInsight('Texto', 'reply-1', 'parent-1') : service.updateComment('Texto', 'reply-1', 'parent-1'));
-      expect(rest.post).toHaveBeenCalledOnceWith(`v1/posts/${type === 'insight' ? 'insights' : 'comments'}/update`, {
-        content: 'Texto', replyUid: 'reply-1', parentUid: 'parent-1', workspaceUid: 'workspace-1',
-      });
-    });
-    it(`propaga errores al actualizar ${type}`, async () => {
-      for (const status of [400, 403, 404, 500]) {
-        rest.post.and.resolveTo({ status });
-        await expectAsync(type === 'insight' ? service.updateInsight('Texto', 'reply', 'parent') : service.updateComment('Texto', 'reply', 'parent')).toBeRejected();
-      }
-    });
-  }
-
-  it('reads an insight through its own endpoint and escapes its UID', async () => {
-    const payload = { uid: 'insight' };
-    rest.get.and.resolveTo({ status: 200, payload });
-    expect(await service.fetchInsightByUid('insight&other=1')).toEqual(payload as any);
-    expect(rest.get).toHaveBeenCalledOnceWith('v1/posts/insights/single?ref=insight%26other%3D1');
+  it('crea publicaciones raíz con el endpoint genérico', async () => {
+    rest.post.and.resolveTo({ status: 200, payload: { uid: 'root' } });
+    await service.save('Texto', 'project');
+    expect(rest.post).toHaveBeenCalledOnceWith('v1/posts', { content: 'Texto', projectUid: 'project', workspaceUid: 'workspace-1' });
   });
-  for (const type of ['comment', 'brick'] as const) {
-    it('creates an insight ' + type + ' through its dedicated route', async () => {
-      rest.post.and.resolveTo({ status: 200, payload: { uid: 'child' } });
-      const result = type === 'brick' ? await service.saveInsightBrick('Texto', 'insight') : await service.saveInsightComment('Texto', 'insight');
-      expect(result.uid).toBe('child');
-      expect(rest.post).toHaveBeenCalledOnceWith('v1/posts/insights/' + (type === 'brick' ? 'bricks' : 'comment'), {
-        content: 'Texto', parentUid: 'insight', workspaceUid: 'workspace-1',
-      });
-    });
-    it('updates an insight ' + type + ' through its dedicated route', async () => {
-      rest.post.and.resolveTo({ status: 200 });
-      if (type === 'brick') await service.updateInsightBrick('Texto', 'child', 'insight');
-      else await service.updateInsightComment('Texto', 'child', 'insight');
-      expect(rest.post).toHaveBeenCalledOnceWith('v1/posts/insights/' + (type === 'brick' ? 'bricks' : 'comment') + '/update', {
-        content: 'Texto', replyUid: 'child', parentUid: 'insight', workspaceUid: 'workspace-1',
-      });
-    });
-    it('rejects unsuccessful or empty creation responses for insight ' + type, async () => {
-      for (const status of [200, 400, 403, 404, 500]) {
-        rest.post.and.resolveTo({ status });
-        await expectAsync(type === 'brick' ? service.saveInsightBrick('Texto', 'insight') : service.saveInsightComment('Texto', 'insight')).toBeRejected();
-      }
-    });
-  }
-
-  it('sends structured measurements without composing the description in frontend', async () => {
-    rest.post.and.resolveTo({ status: 200, payload: { uid: 'brick' } });
-    await service.saveInsightBrick('Texto original', 'insight', { category: 'Testing', duration: { amount: '1,5', unit: 'hours' } });
-    expect(rest.post).toHaveBeenCalledOnceWith('v1/posts/insights/bricks', {
-      content: 'Texto original', parentUid: 'insight', workspaceUid: 'workspace-1', category: 'Testing', duration: { amount: '1,5', unit: 'hours' },
-    });
+  it('crea un hijo enviando parentUid en el RequestBody', async () => {
+    rest.post.and.resolveTo({ status: 200, payload: { uid: 'child' } });
+    await service.save('Respuesta', 'project', 'parent');
+    expect(rest.post).toHaveBeenCalledOnceWith('v1/posts', { content: 'Respuesta', projectUid: 'project', parentUid: 'parent', workspaceUid: 'workspace-1' });
   });
-  it('saves edited brick measurements along with its original description', async () => {
+  it('permite heredar el proyecto del padre', async () => {
+    rest.post.and.resolveTo({ status: 200, payload: { uid: 'child' } });
+    await service.save('Respuesta', undefined, 'parent');
+    expect(rest.post).toHaveBeenCalledOnceWith('v1/posts', { content: 'Respuesta', projectUid: undefined, parentUid: 'parent', workspaceUid: 'workspace-1' });
+  });
+  it('edita hijos por postUid y valida parentUid usando posts/update', async () => {
     rest.post.and.resolveTo({ status: 200 });
-    await service.updateInsightBrick('Editado', 'brick', 'insight', { category: 'Testing', duration: { amount: 45, unit: 'minutes' } });
-    expect(rest.post).toHaveBeenCalledOnceWith('v1/posts/insights/bricks/update', {
-      content: 'Editado', replyUid: 'brick', parentUid: 'insight', workspaceUid: 'workspace-1', category: 'Testing', duration: { amount: 45, unit: 'minutes' },
-    });
+    await service.update('Editado', 'child', 'project', 'parent');
+    expect(rest.post).toHaveBeenCalledOnceWith('v1/posts/update', { content: 'Editado', postUid: 'child', projectUid: 'project', parentUid: 'parent', workspaceUid: 'workspace-1' });
   });
-  it('surfaces the server validation message', async () => {
-    rest.post.and.resolveTo({ status: 400, payload: 'La duración debe ser positiva.' });
-    await expectAsync(service.saveInsightBrick('Texto', 'insight')).toBeRejectedWithError('La duración debe ser positiva.');
+  it('lee cualquier Post por el endpoint genérico y codifica el UID', async () => {
+    const payload = { uid: 'child', childs: [] };
+    rest.get.and.resolveTo({ status: 200, payload });
+    expect(await service.fetchPostByUid('child&other=1')).toEqual(payload as any);
+    expect(rest.get).toHaveBeenCalledOnceWith('v1/posts/single?ref=child%26other%3D1');
+  });
+  it('rechaza creaciones fallidas o sin una publicación persistida', async () => {
+    for (const status of [200, 400, 403, 404, 500]) {
+      rest.post.and.resolveTo({ status });
+      await expectAsync(service.save('Respuesta', 'project', 'parent')).toBeRejected();
+    }
   });
   it('sends manual timestamps and returns the server record', async () => {
     const payload = { uid: 'brick', attributes: { time: { totals: { label: '1h' } } } };

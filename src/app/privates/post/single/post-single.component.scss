@@ -19,28 +19,6 @@
     scrollbar-width: none;
   }
 
-  .post-card {
-    border-radius: 0 !important;
-
-    .card-header {
-      background-color: #fff !important;
-      border-bottom: #fff !important;
-    }
-
-    .card-body {
-      padding: 0px var(--bs-card-spacer-x) !important;
-    }
-
-    .card-footer {
-      background-color: #fff !important;
-      border-top: #fff !important;
-
-      .button-more {
-        font-size: 50%;
-      }
-    }
-  }
-
   .main-content {
     min-width: 0;
 

@@ -1,5 +1,3 @@
-import { BrickFieldsComponent, BrickFieldsModule } from '../brick-fields/brick-fields';
-import { BrickInput } from '../../models/interfaces/brick';
 import { ChangeDetectorRef, Component, ElementRef, EventEmitter, Inject, NgModule, OnDestroy, Output, ViewChild } from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { BasePostDTO, FullPostDTO } from '../../models/interfaces/responses/post.response';
@@ -7,9 +5,11 @@ import { PostService } from '../../services/post.service';
 import { NotificationService } from '../../services/notification.service';
 import { PostEditorModule } from '../post-editor';
 
-export type PostEditContext =
-  | { type: 'post'; projectUid: string }
-  | { type: 'insight' | 'comment' | 'insight-comment' | 'insight-brick'; parentUid: string };
+export interface PostEditContext {
+  type: 'post';
+  projectUid: string;
+  parentUid?: string;
+}
 
 interface BootstrapModal {
   show(): void;
@@ -35,8 +35,6 @@ type BootstrapWindow = Window & {
               [disabled]="isSaving" (click)="close()"></button>
           </div>
           <div class="modal-body">
-            <app-brick-fields *ngIf="post && brickInsightUid" [insightUid]="brickInsightUid"
-              [attributes]="post.attributes" [category]="post.category || ''" [editing]="true" [legacy]="legacyBrick" [disabled]="isSaving"></app-brick-fields>
             <app-post-editor *ngIf="post" [source]="post.rawContent"
               [saving]="isSaving" [submitText]="isSaving ? 'Guardando…' : 'Guardar cambios'"
               (saveEvent)="save($event)"></app-post-editor>
@@ -55,20 +53,12 @@ export class PostEditModalComponent implements OnDestroy {
   private static nextId = 0;
   readonly titleId = 'post-edit-title-' + PostEditModalComponent.nextId++;
   @ViewChild('modalElement', { static: true }) modalElement!: ElementRef<HTMLDivElement>;
-  @ViewChild(BrickFieldsComponent) brickFields?: BrickFieldsComponent;
   @Output() updatedEvent = new EventEmitter<string>();
 
   post?: BasePostDTO;
   private context?: PostEditContext;
 
-  get brickInsightUid(): string { return this.context?.type === 'insight-brick' ? this.context.parentUid : ''; }
-  get legacyBrick(): boolean { return !this.post?.attributes?.time; }
-
-  get title(): string {
-    return this.context?.type === 'insight' ? 'Editar insight'
-      : this.context?.type === 'comment' || this.context?.type === 'insight-comment' ? 'Editar comentario'
-      : this.context?.type === 'insight-brick' ? 'Editar brick' : 'Editar publicación';
-  }
+  get title(): string { return 'Editar publicación'; }
   isSaving = false;
   errorMessage = '';
   private modal?: BootstrapModal;
@@ -101,7 +91,7 @@ export class PostEditModalComponent implements OnDestroy {
     const editContext: PostEditContext = context ?? {
       type: 'post', projectUid: (post as FullPostDTO).project?.uid || '',
     };
-    if (!post.uid || (editContext.type === 'post' ? !editContext.projectUid : !editContext.parentUid)) {
+    if (!post.uid || !editContext.projectUid) {
       this.notificationService.showError('Falta la referencia de la publicación o de su contexto de edición.');
       return;
     }
@@ -135,40 +125,21 @@ export class PostEditModalComponent implements OnDestroy {
       return;
     }
 
-    let fields: BrickInput = {};
-    if (this.context.type === 'insight-brick') {
-      try {
-        if (!this.brickFields) throw new Error('Completa los datos del brick.');
-        fields = this.brickFields.read();
-      }
-      catch (error: any) { this.errorMessage = error.message; return; }
-    }
     const post = this.post;
     const context = this.context;
     this.isSaving = true;
     this.errorMessage = '';
     try {
-      if (context.type === 'post') {
-        await this.postService.update(content, post.uid, context.projectUid);
-      }
-      else if (context.type === 'insight') {
-        await this.postService.updateInsight(content, post.uid, context.parentUid);
-      }
-      else if (context.type === 'insight-comment') {
-        await this.postService.updateInsightComment(content, post.uid, context.parentUid);
-      }
-      else if (context.type === 'insight-brick') {
-        await this.postService.updateInsightBrick(content, post.uid, context.parentUid, fields);
+      if (context.parentUid) {
+        await this.postService.update(content, post.uid, context.projectUid, context.parentUid);
       }
       else {
-        await this.postService.updateComment(content, post.uid, context.parentUid);
+        await this.postService.update(content, post.uid, context.projectUid);
       }
       if (this.destroyed) return;
       this.isSaving = false;
       this.close();
-      this.notificationService.show(context.type === 'insight' ? 'Insight actualizado.'
-        : context.type === 'insight-brick' ? 'Brick actualizado.'
-        : context.type === 'comment' || context.type === 'insight-comment' ? 'Comentario actualizado.' : 'Publicación actualizada.');
+      this.notificationService.show('Publicación actualizada.');
       this.updatedEvent.emit(post.uid);
     }
     catch (error: any) {
@@ -192,7 +163,7 @@ export class PostEditModalComponent implements OnDestroy {
 
 @NgModule({
   declarations: [PostEditModalComponent],
-  imports: [CommonModule, PostEditorModule, BrickFieldsModule],
+  imports: [CommonModule, PostEditorModule],
   exports: [PostEditModalComponent],
 })
 export class PostEditModalModule {}

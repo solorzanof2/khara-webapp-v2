@@ -1,4 +1,3 @@
-import { BrickFieldsModule } from '../../../commons/components/brick-fields/brick-fields';
 import { NgModule } from '@angular/core';
 import { PostInsightComponent } from './post-insight.component';
 import { CommonModule } from '@angular/common';
@@ -7,14 +6,12 @@ import { PostEditorModule } from '../../../commons/components/post-editor';
 import { PostEditModalModule } from '../../../commons/components/post-edit-modal';
 import { TimelineModule } from '../../../commons/components/timeline';
 import { SanitizeHTMLModule } from '../../../commons/pipes/sanitize-html';
-import { PostInsightTypeComponent } from './post-insight-type';
 import { PostService } from '../../../commons/services/post.service';
 
 
 @NgModule({
   declarations: [
     PostInsightComponent,
-    PostInsightTypeComponent,
   ],
   imports: [
     CommonModule,
@@ -25,7 +22,6 @@ import { PostService } from '../../../commons/services/post.service';
       },
     ]),
     PostEditorModule,
-    BrickFieldsModule,
     PostEditModalModule,
     TimelineModule,
     SanitizeHTMLModule,

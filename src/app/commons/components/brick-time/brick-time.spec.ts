@@ -91,3 +91,52 @@ describe('BrickTimeComponent dates with the application locale', () => {
     fixture.destroy();
   });
 });
+
+describe('BrickTimeComponent collapsible header', () => {
+  it('starts collapsed, toggles from the header and keeps actions independent', async () => {
+    await TestBed.configureTestingModule({ imports: [BrickTimeModule] }).compileComponents();
+    const fixture = TestBed.createComponent(BrickTimeComponent);
+    fixture.componentInstance.brick = { uid: 'brick', category: 'General', attributes: { time: {
+      measurements: [{ startedAt: 1000, finishedAt: 2000, millis: 1000, label: '1s', createdAt: 1000, reported: false }],
+      totals: { millis: 1000, label: '1s', reported: '0s', createdAt: 1000, updatedAt: 2000 },
+    } } } as BasePostDTO;
+    fixture.detectChanges();
+    const element = fixture.nativeElement as HTMLElement;
+    const summary = element.querySelector<HTMLButtonElement>('.time-summary')!;
+    const details = element.querySelector<HTMLElement>('#brick-time-details-brick')!;
+    const actions = element.querySelectorAll<HTMLButtonElement>('.time-header .btn-xs');
+    spyOn(fixture.componentInstance.actionEvent, 'emit');
+
+    expect(details.hidden).toBeTrue();
+    expect(summary.getAttribute('aria-expanded')).toBe('false');
+    expect(summary.textContent).toContain('General');
+    expect(summary.textContent).toContain('Total: 1s');
+    expect(summary.textContent).toContain('Reportado: 0s');
+    actions[0].click();
+    actions[1].click();
+    fixture.detectChanges();
+    expect(details.hidden).toBeTrue();
+    expect(fixture.componentInstance.actionEvent.emit).toHaveBeenCalledWith({ brick: fixture.componentInstance.brick, action: 'start' });
+    expect(fixture.componentInstance.actionEvent.emit).toHaveBeenCalledWith({ brick: fixture.componentInstance.brick, action: 'report' });
+
+    summary.click();
+    fixture.detectChanges();
+    expect(details.hidden).toBeFalse();
+    expect(summary.getAttribute('aria-expanded')).toBe('true');
+    expect(details.querySelector('table')).not.toBeNull();
+    const input = details.querySelector<HTMLInputElement>('input')!;
+    input.value = '2026-11-01T09:30:01';
+    input.dispatchEvent(new Event('input'));
+    actions[1].click();
+    fixture.detectChanges();
+    expect(details.hidden).toBeFalse();
+
+    element.querySelector<HTMLElement>('.time-header')!.click();
+    fixture.detectChanges();
+    expect(details.hidden).toBeTrue();
+    summary.click();
+    fixture.detectChanges();
+    expect(input.value).toBe('2026-11-01T09:30:01');
+    fixture.destroy();
+  });
+});

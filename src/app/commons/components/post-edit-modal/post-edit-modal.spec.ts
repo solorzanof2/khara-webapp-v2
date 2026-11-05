@@ -1,4 +1,3 @@
-import { BrickFieldsComponent } from '../brick-fields/brick-fields';
 import { ChangeDetectorRef, ElementRef } from '@angular/core';
 import { PostEditModalComponent } from './post-edit-modal';
 import { BasePostDTO, FullPostDTO } from '../../models/interfaces/responses/post.response';
@@ -22,83 +21,26 @@ describe('PostEditModalComponent', () => {
       }
     });
     const doc = { defaultView: { bootstrap: { Modal: function () { return modal; } } }, activeElement: null } as unknown as Document;
-    posts = jasmine.createSpyObj('PostService', ['update', 'updateInsight', 'updateComment', 'updateInsightComment', 'updateInsightBrick']);
+    posts = jasmine.createSpyObj('PostService', ['update']);
     posts.update.and.resolveTo();
-    posts.updateInsight.and.resolveTo();
-    posts.updateComment.and.resolveTo();
     changes = jasmine.createSpyObj('ChangeDetectorRef', ['detectChanges']);
     const notifications = jasmine.createSpyObj('NotificationService', ['show', 'showError']);
     component = new PostEditModalComponent(doc, changes, posts, notifications);
     component.modalElement = new ElementRef(element);
-    component.brickFields = { read: () => ({}) } as BrickFieldsComponent;
   });
   afterEach(() => component.ngOnDestroy());
 
-  for (const type of ['insight', 'comment'] as const) {
-    it(`edita un ${type} sin project usando el padre y su endpoint específico`, async () => {
-      const reply = { uid: 'reply-1', rawContent: 'Original' } as BasePostDTO;
-      component.open(reply, { type, parentUid: 'parent-1' });
-      expect(component.title).toBe(type === 'insight' ? 'Editar insight' : 'Editar comentario');
-      spyOn(component.updatedEvent, 'emit');
-      await component.save('Editado');
-      expect(type === 'insight' ? posts.updateInsight : posts.updateComment).toHaveBeenCalledOnceWith('Editado', 'reply-1', 'parent-1');
-      expect(type === 'insight' ? posts.updateComment : posts.updateInsight).not.toHaveBeenCalled();
-      expect(posts.update).not.toHaveBeenCalled();
-      expect(component.updatedEvent.emit).toHaveBeenCalledOnceWith('reply-1');
-      component.open(selected);
-      await component.save('Post editado');
-      expect(posts.update).toHaveBeenCalledOnceWith('Post editado', 'post-1', 'project-1');
-    });
-    it(`conserva el editor de ${type} tras un error sin emitir actualización`, async () => {
-      const reply = { uid: 'reply-1', rawContent: 'Original' } as BasePostDTO;
-      const update = type === 'insight' ? posts.updateInsight : posts.updateComment;
-      update.and.rejectWith(new Error('Error al actualizar'));
-      component.open(reply, { type, parentUid: 'parent-1' });
-      spyOn(component.updatedEvent, 'emit');
-      await component.save('Editado');
-      expect(component.post).toBe(reply);
-      expect(component.errorMessage).toBe('Error al actualizar');
-      expect(component.updatedEvent.emit).not.toHaveBeenCalled();
-      expect(component.isSaving).toBeFalse();
-    });
-  }
-  for (const type of ['insight-comment', 'insight-brick'] as const) {
-    it('sends ' + type + ' to the insight child update endpoint', async () => {
-      const update = type === 'insight-brick' ? posts.updateInsightBrick : posts.updateInsightComment;
-      update.and.resolveTo();
-      component.open({ uid: 'child', rawContent: 'Original' } as BasePostDTO, { type, parentUid: 'insight' });
-      await component.save('Editado');
-      if (type === 'insight-brick') expect(update).toHaveBeenCalledOnceWith('Editado', 'child', 'insight', {});
-      else expect(update).toHaveBeenCalledOnceWith('Editado', 'child', 'insight');
-      expect(posts.updateComment).not.toHaveBeenCalled();
-      expect(posts.updateInsight).not.toHaveBeenCalled();
-      expect(posts.update).not.toHaveBeenCalled();
-    });
-  }
-  it('preloads the original brick and passes its measurements to the field editor', () => {
-    const attributes = { time: { measurements: [], totals: { millis: 60000, label: '1min', createdAt: 1, updatedAt: 1, reported: '0s' } } };
-    component.open({ uid: 'brick', category: 'Testing', rawContent: 'Original', attributes } as unknown as BasePostDTO, { type: 'insight-brick', parentUid: 'insight' });
-    expect(component.brickInsightUid).toBe('insight');
-    expect(component.post!.attributes).toBe(attributes);
-    expect(component.legacyBrick).toBeFalse();
-  });
-  it('keeps an edited brick open on validation or server errors', async () => {
-    component.open({ uid: 'brick', rawContent: 'Original' } as BasePostDTO, { type: 'insight-brick', parentUid: 'insight' });
-    const read = spyOn(component.brickFields!, 'read').and.throwError('Duración inválida');
+  it('edita un hijo con el endpoint genérico y su contexto', async () => {
+    const child = { uid: 'child', rawContent: 'Original' } as BasePostDTO;
+    component.open(child, { type: 'post', projectUid: 'project-1', parentUid: 'parent' });
+    expect(component.title).toBe('Editar publicación');
+    spyOn(component.updatedEvent, 'emit');
     await component.save('Editado');
-    expect(posts.updateInsightBrick).not.toHaveBeenCalled();
-    expect(component.errorMessage).toBe('Duración inválida');
-    read.and.returnValue({ duration: { amount: 2, unit: 'hours' }, category: 'Testing' });
-    posts.updateInsightBrick.and.rejectWith(new Error('Falló'));
-    await component.save('Editado');
-    expect(component.post!.uid).toBe('brick');
-    expect(component.errorMessage).toBe('Falló');
-    expect(modal.hide).not.toHaveBeenCalled();
+    expect(posts.update).toHaveBeenCalledOnceWith('Editado', 'child', 'project-1', 'parent');
+    expect(component.updatedEvent.emit).toHaveBeenCalledOnceWith('child');
   });
-  it('no abre una respuesta sin padre ni un post sin proyecto', () => {
-    component.open({ uid: 'reply-1' } as BasePostDTO, { type: 'comment', parentUid: '' });
-    expect(modal.show).not.toHaveBeenCalled();
-    component.open({ uid: 'post-1' } as FullPostDTO);
+  it('no abre publicaciones sin contexto de proyecto', () => {
+    component.open({ uid: 'child' } as BasePostDTO, { type: 'post', projectUid: '', parentUid: 'parent' });
     expect(modal.show).not.toHaveBeenCalled();
   });
 

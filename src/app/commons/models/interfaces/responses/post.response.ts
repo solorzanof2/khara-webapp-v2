@@ -7,7 +7,7 @@ export interface BasePostDTO {
   attributes?: BrickAttributes;
   category?: string;
 
-  type?: 'comment' | 'insight' | 'insight-comment' | 'insight-brick';
+  type?: 'post';
 
   uid: string;
   rawContent: string;
@@ -16,8 +16,7 @@ export interface BasePostDTO {
   created: number;
   updatedLabel: string;
   updated: number;
-  totalComments: number;
-  totalInsights: number;
+  totalChilds: number;
   displayName: string;
   mention: string;
 
@@ -35,8 +34,7 @@ export interface InsightPostDTO extends BasePostDTO {
 export interface FullPostDTO extends BasePostDTO {
 
   project: Project;
-  insights: InsightPostDTO[];
-  comments: BasePostDTO[];
+  childs: BasePostDTO[];
 
 }
 
